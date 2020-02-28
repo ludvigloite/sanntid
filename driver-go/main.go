@@ -36,6 +36,8 @@ func main(){
               elevio.SetMotorDirection(elevio.MD_Up)
             }else{
               elevio.SetMotorDirection(elevio.MD_Stop)
+              elevio.SetButtonLamp(a.Button, a.Floor, false)
+              //Fjern andre lamper i samme etasje
             }
 
         case a := <- drv_floors:
