@@ -1,3 +1,5 @@
+//This module updates which peers that is alive and lost + new
+
 package peers
 
 import (
@@ -17,6 +19,7 @@ type PeerUpdate struct {
 const interval = 15 * time.Millisecond
 const timeout = 50 * time.Millisecond
 
+// Transmitter(.) writes to conn after time interval if transmitEnable is enabeled
 func Transmitter(port int, id string, transmitEnable <-chan bool) {
 
 	conn := conn.DialBroadcastUDP(port)
@@ -34,6 +37,8 @@ func Transmitter(port int, id string, transmitEnable <-chan bool) {
 	}
 }
 
+//Reciever(.)
+
 func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 
 	var buf [1024]byte
@@ -45,8 +50,8 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 	for {
 		updated := false
 
-		conn.SetReadDeadline(time.Now().Add(interval))
-		n, _, _ := conn.ReadFrom(buf[0:])
+		conn.SetReadDeadline(time.Now().Add(interval)) //sets deadline after interval
+		n, _, _ := conn.ReadFrom(buf[0:]) //reads from buffer on conn
 
 		id := string(buf[:n])
 

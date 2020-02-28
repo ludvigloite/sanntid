@@ -1,3 +1,7 @@
+//This moduel contains
+// - Transmitter(.): encodes values from "chans" into JSON -> broadcasts on port
+// - Reciever(.): encodes JSON to values in "chans" ->sends on corresponding channel
+// - checkArgs(.): checks if transmitters and recievers are valid
 package bcast
 
 import (
@@ -33,7 +37,7 @@ func Transmitter(port int, chans ...interface{}) {
 	addr, _ := net.ResolveUDPAddr("udp4", fmt.Sprintf("255.255.255.255:%d", port))
 	for {
 		chosen, value, _ := reflect.Select(selectCases)
-		buf, _ := json.Marshal(value.Interface())
+		buf, _ := json.Marshal(value.Interface()) //returns JSON encoding of value.interface{})
 		conn.WriteTo([]byte(typeNames[chosen]+string(buf)), addr)
 	}
 }
