@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////
 //	Viktig å huske på at ned første etasje og opp øverste etasje ikke finnes!
-//
+//	Selve order_handler blir vel ikke kjørt. Vil verdiene bli intialisert?
 //
 //
 //
@@ -28,6 +28,8 @@ const(
 )
 
 var currentOrder int //sier hvilken etasje heisen er på vei til. -1 om den ikke har noen ordre.
+var currentFloor int //hvilken etasje er heisen i nå. 0 , 1 , 2 , 3
+var currentDir int //hvilken retning har heisen. -1 , 0 , 1. Kun 0 i spesielle tilfeller. Er -1 / 1 også når den stopper i et floor. Den skal jo tross alt videre i samme retning.
 
 type CabOrders struct{
 	ElevID int //hvilken elevator cab callsa tilhører
@@ -38,6 +40,7 @@ var cabOrderQueue = &CabOrders{} struct //variabelen som kan endres på
 
 var hallOrderQueue = &[numFloors][numHallButtons] int //inneholder en liste med alle hall orders. -1 om inaktiv. 0 om den er aktiv, men ikke tatt. ellers ID til heisen om en av dem skal utføre ordren.
 //nullte element er opp, første element er ned.
+
 
 func InitQueues(hallQueue *[numFloors][numHallButtons] int, cabQueue *CabOrders){
 	InitHallQueue(hallQueue)
@@ -60,9 +63,18 @@ func InitCabQueue(queue *CabOrders){
 	}
 }
 
+func SetCurrentFloor(int floor){
+	currentFloor = floor
+}
+func SetCurrentDir(int dir){
+	currentDir = dir
+}
+
 ////////////// ARBITRATOR UNDER ? //////////////
 
-func ShouldElevator
+func WhatElevatorShouldTakeOrder(){ //Evt whatOrderSHouldthisElevatorTake()??
+
+}
 
 
 
@@ -152,12 +164,12 @@ func UpdateLights() void{ //vet ikke om i og j blir riktig???? //Kan sikkert gj�
 func GetDirection(currentFloor int, currentOrder int) int{
 	if currentOrder == -1 || currentOrder == currentFloor { //enten har den ikke noen retning, eller så er den på riktig floor
 		return 0
-	
+
 	} else if currentFloor < currentOrder { //heisen er lavere enn sin destinasjon -> kjører oppover
 		return 1
-	
+
 	} else{
-		return -1 
+		return -1
 	}
 
 }
