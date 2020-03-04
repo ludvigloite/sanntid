@@ -2,21 +2,39 @@ package network
 
 import (
   "net"
-  "set_up"
+  "../setup"
 )
 func UDPInit(localPort, bcastPort string){
 
-  //broadcast address
-  bcastAddr, err = ResolveUDPAddr("udp", "255.255.255.255" + bcastPort)
+  //Setting up broadcast address
+  bcastAddr, err = ResolveUDPAddr("udp", broadcastAddr + bcastPort)
   if err != nil{
     return err
   }
 
-  //local address
+  //Setting up broadcast listening conn
+  bcastListenConn, err = net.ListenUDP("udp",bcastAddr)
+  if err != nil{
+    return err
+  }
+
+  //Setting up local address
   localConn, err := net.DialUDP("udp4", nil, bcastAddr)
   if err != nil{
     return err
   }
-  defer localConn
+
   localAddr, err := net.ResolveUDPAddr("udp", (localConn.LocalAddr()).String())
+  localAddr.Port() = localPort
+  defer localConn
+
+  if err != nil{
+    return err
+  }
+
+  //Setting up local listening conn
+  bcastListenConn, err := net.ListenUDP("udp",localAddr)
+  if err != nil{
+    return err
+  }
 }
