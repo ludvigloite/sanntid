@@ -2,16 +2,17 @@
 //	Viktig å huske på at ned første etasje og opp øverste etasje ikke finnes!
 //	Selve order_handler blir vel ikke kjørt. Vil verdiene bli intialisert?
 //
-//
+//	Kanskje bare la alt skje i orderhandler. Eneste som blir sendt mellom FSM og orderhandler er ordre som skal legges til. Dette gjøres med goroutine
 //
 //////////////////////////////////////////////////
+
 
 package orderhandler
 
 import(
 	"fmt"
+	"../elevio"
 )
-
 
 const numFloors = 4
 const numHallButtons = 2
@@ -40,15 +41,16 @@ type Order struct{
 	ButtonType int
 }
 
-var cabOrderQueue = &CabOrders{} struct //variabelen som kan endres på
 
-var hallOrderQueue = &[numFloors][numHallButtons] int //inneholder en liste med alle hall orders. -1 om inaktiv. 0 om den er aktiv, men ikke tatt. ellers ID til heisen om en av dem skal utføre ordren.
+var cabOrderQueue = &CabOrders{}//variabelen som kan endres på
+
+var hallOrderQueue = &[numFloors][numHallButtons] int{} //inneholder en liste med alle hall orders. -1 om inaktiv. 0 om den er aktiv, men ikke tatt. ellers ID til heisen om en av dem skal utføre ordren.
 //nullte element er opp, første element er ned.
 
 
-func InitQueues(hallQueue *[numFloors][numHallButtons] int, cabQueue *CabOrders){
-	InitHallQueue(hallQueue)
-	InitCabQueue(cabQueue)
+func InitQueues(){
+	InitCabQueue(cabOrderQueue)
+	InitHallQueue(hallOrderQueue)
 }
 
 
@@ -82,6 +84,12 @@ func SetCurrentDir(dir int){
 func SetCurrentOrder(floor int){
 	currentOrder = floor
 }
+func GetCurrentOrder()int {return currentOrder}
+func GetCurrentDir()int {return currentDir}
+func GetCurrentFloor()int {return currentFloor}
+func GetElevatorID()int {return elevatorID}
+func GetNumFloors()int {return numFloors}
+func GetNumHallButtons()int {return numHallButtons}
 
 ////////////// ARBITRATOR UNDER ? //////////////
 
@@ -98,7 +106,7 @@ func WhatElevatorShouldTakeOrder(){ //Evt whatOrderSHouldthisElevatorTake()??
 
 
 func IsThereOrder(floor int, buttonType int, elevID int) bool{ //buttontype: 0=opp 1=ned 2=cabOrder //kan kanskje bare implementeres i ShouldStopAtFloor //kan kanskje fjerne elevID og heller bruke global variabel
-	if buttontype == 2{
+	if buttonType == 2{
 		if cabOrderQueue.Active[floor] == 0 && cabOrderQueue.ElevID == elevID{
 			return true
 		}
@@ -113,17 +121,17 @@ func IsThereOrder(floor int, buttonType int, elevID int) bool{ //buttontype: 0=o
 
 
 func ShouldStopAtFloor(currentFloor int, currentOrder int, elevID int) bool{
-	dir := getDirection(currentFloor,currentOrder) //-1, 0 eller 1
+	dir := GetDirection(currentFloor,currentOrder) //-1, 0 eller 1
 	if dir == 0{ //har ingen ordre eller er på etasjen currentOrder tilsier
 		return true
 	}
-	if IsThereOrder(currentOrder,2,elevID){ //Det er en cab order i denne etasjen
+	if IsThereOrder(currentFloor,2,elevID){ //Det er en cab order i denne etasjen
 		return true
 	}
-	if IsThereOrder(currentOrder,0,elevID) && dir == 1{ //retning til heis er opp og det er en ordre opp
+	if IsThereOrder(currentFloor,0,elevID) && dir == 1{ //retning til heis er opp og det er en ordre opp
 		return true
 	}
-	if IsThereOrder(currentOrder,1,elevID) && dir == -1 { //retning til heis er ned og det er en ordre ned
+	if IsThereOrder(currentFloor,1,elevID) && dir == -1 { //retning til heis er ned og det er en ordre ned
 		return true
 	}
 	return false
@@ -142,36 +150,34 @@ func AddOrder(floor int, buttonType int, elevatorID int){ //elevatorID er 0 om d
 	} else{
 		hallOrderQueue[floor][buttonType] = elevatorID //active
 	}
+	fmt.Println(cabOrderQueue.Active)
+	fmt.Println(hallOrderQueue)
 }
 
 func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres mer effektiv. NumHallButtons er jo bare 2..Evt lage en funskjon for hall-lights og en for cab-lights
 	for i := 0; i < numFloors; i++{
 		if cabOrderQueue.Active[i] ==-1 {
-			elevio.SetButtonLamp(2, i, false)
+			elevio.SetButtonLamp(elevio.BT_Cab, i, false)
 		} else{
-			elevio.SetButtonLamp(2, i, true)
+			elevio.SetButtonLamp(elevio.BT_Cab, i, true)
 		}
 
 		for j := 0; j < numHallButtons; j++{
-			if i != 0 && i != 3{ //hvis det ikke er 1 etasje eller 4 etasje.
+			if i != 0 && j == 1{ //hvis det ikke er 1 etasje eller 4 etasje.
 				if hallOrderQueue[i][j] == -1{
-				elevio.SetButtonLamp(j, i, false)
+				elevio.SetButtonLamp(elevio.BT_HallDown, i, false)
 				} else{
-				elevio.SetButtonLamp(j, i, true)
+				elevio.SetButtonLamp(elevio.BT_HallDown, i, true)
+				}
+			}
+			if i != numFloors && j == 0{
+				if hallOrderQueue[i][j] == -1{
+				elevio.SetButtonLamp(elevio.BT_HallUp, i, false)
+				} else{
+				elevio.SetButtonLamp(elevio.BT_HallUp, i, true)
 				}
 			}
 		}
-	}
-	if hallOrderQueue[0][0] == -1{ //første etasje opp
-	elevio.SetButtonLamp(0, 0, false)
-	} else{
-		elevio.SetButtonLamp(0, 0, true)
-	}
-
-	if hallOrderQueue[numFloors][1] == -1{ //4 etasje ned
-	elevio.SetButtonLamp(1, numFloors, false)
-	} else{
-		elevio.SetButtonLamp(1, numFloors, true)
 	}
 }
 

@@ -1,50 +1,54 @@
 package elevcontroller
 
 import(
-	"fmt"
+	//"fmt"
+	"time"
 	"../elevio"
 	"../orderhandler"
-	"../timer"
+	//"../timer"
 
 )
 
 //ha timer med her??
 
 func Initialize(){
-    elevio.Init("localhost:15657", orderhandler.numFloors)
+    elevio.Init("localhost:15657", orderhandler.GetNumFloors())
     orderhandler.SetElevatorID(1) //BØR IKKE HARDKODES!!
     //Wipe alle ordre til nå??
- 
 
-    orderhandler.InitQueues(orderhandler.cabOrderQueue, orderhandler.hallOrderQueue)
-	InitializeLights(orderhandler.numFloors)
-	InitializeElevator()
+    orderhandler.InitQueues()
+	InitializeLights(orderhandler.GetNumFloors())
+	
+	//InitializeElevator()
 	//Gjør det som main starter med.
 
 }
 
+/*
 func InitializeElevator(){
-	hasHitFloor := false
+	//hasHitFloor := false
 	//kjør ned til etasjen under etasje
 	//når treffer floor. Sett floor.
 
 	drv_floors  := make(chan int)
+	fmt.Println("Prøver å starte goroutine")
     go elevio.PollFloorSensor(drv_floors)
+    fmt.Println("ferdig med goroutine")
 
 	elevio.SetMotorDirection(elevio.MD_Down)
 
-	a <- drv_floors
+	a := <- drv_floors
 
 	elevio.SetMotorDirection(elevio.MD_Stop)
-	orderhandler.setFloor(a)
-	orderhandler.setDir(0)
+	orderhandler.SetCurrentFloor(a)
+	orderhandler.SetCurrentDir(0)
 	elevio.SetFloorIndicator(a)
 	fmt.Println("Heisen er intialisert og venter i etasje nr ", a)
 
 	close(drv_floors) //vet ikke om funker?
 
 
-	/*for !hasHitFloor {
+	for !hasHitFloor {
 		select{ //skal runne helt til den treffer et floor
 		case a := <- drv_floors:
 			//fmt.Printf("%+v\n", a)
@@ -57,19 +61,22 @@ func InitializeElevator(){
 		}
 	}
 	hasHitFloor := false //Resetter din til false for å unngå problemer. Kan kanskje fjerne?
-	*/
+	
 }
+*/
 
+
+//Kan vel kanskje i stedet bare fjerne alle ordre og så kjøre update lights??
 func InitializeLights(numFloors int){ //NB: Endra her navn til numHallButtons
 	//Slår av lyset på alle lys
 	elevio.SetDoorOpenLamp(false)
 	for i := 0; i < numFloors; i++{
-		elevio.SetButtonLamp(2, i, false)
+		elevio.SetButtonLamp(elevio.BT_Cab, i, false)
 		if i != 0{ //er ikke i første etasje -> kan endre på alle ned_lys 
-			elevio.SetButtonLamp(1,i,false)
+			elevio.SetButtonLamp(elevio.BT_HallDown,i,false)
 		}
 		if i != numFloors{ //er ikke i 4 etasje -> kan endre på alle opp_lys
-			elevio.SetButtonLamp(0,i,false)
+			elevio.SetButtonLamp(elevio.BT_HallUp,i,false)
 		}
 	}
 
