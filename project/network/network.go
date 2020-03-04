@@ -1,5 +1,6 @@
-package network
 
+package network
+/*
 import (
   "net"
   "../setup"
@@ -38,3 +39,4 @@ func UDPInit(localPort, bcastPort string){
     return err
   }
 }
+*/

@@ -13,12 +13,13 @@ import(
   "../bcast"
   "../localip"
   "../conn"
-  ".../setup"
 )
 
 //Initialize channels for reciving and sending packets
 //rPort is the port used to read
 //wPort is the port used to write
+
+const buffer = 1024
 
 func Init(rPort string, wPort string) (<-chan Packet, chan<- Packet){
   reciever := make(chan Packet, buffer)
@@ -28,7 +29,7 @@ func Init(rPort string, wPort string) (<-chan Packet, chan<- Packet){
   return reciever, sender
 }
 
-func listen(reciever chan Packet, port string){
+func Listen(reciever chan Packet, port string){
   //Set up connection to listen to
   localAddr, _ := net.ResolveUDPAddr("udp", port)
   conn, err := net.ListenUDP("udp", localAddr)
@@ -40,12 +41,12 @@ func listen(reciever chan Packet, port string){
   var packet Packet
   //Infinite loop waiting for reciving packets
   for {
-    Receiver(int(port), reciever) //litt usikker her???
+    bcast.Receiver(int(port), reciever) //litt usikker her???
   }
 }
 
-func bcast(sender chan Packet, port string){
-  localIP, err = LocalIP()
+func Bcast(sender chan Packet, port string){
+  localIP, err = localip.LocalIP()
   if err != nil{
     return err
   }
@@ -59,6 +60,6 @@ func bcast(sender chan Packet, port string){
 
   //Infinite loop waiting for sending packets
   for{
-    Transmitter(int(port), sender) //litt usikker her???
+    bcast.Transmitter(int(port), sender) //litt usikker her???
   }
 }
