@@ -3,18 +3,21 @@ package elevController
 import(
 	"fmt"
 	"../elevio"
+	"../orderhandler"
+	"../time"
 
 )
 
 //ha timer med her??
 
 func Initialize(){
-    elevio.Init("localhost:15657", orderHandler.numFloors)
+    elevio.Init("localhost:15657", orderhandler.numFloors)
+    orderhandler.SetElevatorID(1) //BØR IKKE HARDKODES!!
     //Wipe alle ordre til nå??
  
 
-    orderHandler.InitQueues(orderHandler.cabOrderQueue, orderHandler.hallOrderQueue)
-	InitializeLights(orderHandler.numFloors)
+    orderhandler.InitQueues(orderhandler.cabOrderQueue, orderhandler.hallOrderQueue)
+	InitializeLights(orderhandler.numFloors)
 	InitializeElevator()
 	//Gjør det som main starter med.
 
@@ -33,8 +36,8 @@ func InitializeElevator(){
 	a <- drv_floors
 
 	elevio.SetMotorDirection(elevio.MD_Stop)
-	orderHandler.setFloor(a)
-	orderHandler.setDir(0)
+	orderhandler.setFloor(a)
+	orderhandler.setDir(0)
 	elevio.SetFloorIndicator(a)
 	fmt.Println("Heisen er intialisert og venter i etasje nr ", a)
 
@@ -72,6 +75,11 @@ func InitializeLights(numFloors int){ //NB: Endra her navn til numHallButtons
 
 }
 
-func OpenDoor(){
+func StopElevator(){
+	elevio.SetMotorDirection(elevio.MD_Stop)
+	OpenDoor(3)
+}
 
+func OpenDoor(sec time.Duration){
+	//HA I TIMER MODUL??
 }

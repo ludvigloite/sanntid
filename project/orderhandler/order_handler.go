@@ -35,6 +35,10 @@ type CabOrders struct{
 	ElevID int //hvilken elevator cab callsa tilhører
 	Active [numFloors]int //hvilke av de fire knappene som er aktive // !!!! -1:inaktiv, 0:aktiv 2:executing?
 }
+type Order struct{
+	Floor int
+	ButtonType int
+}
 
 var cabOrderQueue = &CabOrders{} struct //variabelen som kan endres på
 
@@ -63,11 +67,20 @@ func InitCabQueue(queue *CabOrders){
 	}
 }
 
-func SetCurrentFloor(int floor){
+func SetElevatorID(ID int){
+	elevatorID = ID
+}
+
+func SetCurrentFloor(floor int){
 	currentFloor = floor
 }
-func SetCurrentDir(int dir){
+
+func SetCurrentDir(dir int){
 	currentDir = dir
+}
+
+func SetCurrentOrder(floor int){
+	currentOrder = floor
 }
 
 ////////////// ARBITRATOR UNDER ? //////////////
@@ -116,21 +129,22 @@ func ShouldStopAtFloor(currentFloor int, currentOrder int, elevID int) bool{
 	return false
 }
 
-func ClearFloor(floor int) void{ //fjerner alle ordre i denne etasjen fra køene. Kan bare utføres av heisen selv
+func ClearFloor(floor int){ //fjerner alle ordre i denne etasjen fra køene. Kan bare utføres av heisen selv
+	//gjør det noe at den setter -1 til 1 etasje ned og 4 etasje opp??
 	hallOrderQueue[floor][0] = -1
 	hallOrderQueue[floor][1] = -1
 	cabOrderQueue.Active[floor] = -1
 }
 
-func AddOrder(floor int, buttonType int) void{
+func AddOrder(floor int, buttonType int, elevatorID int){ //elevatorID er 0 om det bare skal legges inn ordre uten at noen tar den.
 	if buttonType == 2{ //caborder
-		cabOrderQueue.Active[floor] = 0 //active
+		cabOrderQueue.Active[floor] = elevatorID //active
 	} else{
-		hallOrderQueue[floor][buttonType] = 0 //active
+		hallOrderQueue[floor][buttonType] = elevatorID //active
 	}
 }
 
-func UpdateLights() void{ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres mer effektiv. NumHallButtons er jo bare 2..Evt lage en funskjon for hall-lights og en for cab-lights
+func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres mer effektiv. NumHallButtons er jo bare 2..Evt lage en funskjon for hall-lights og en for cab-lights
 	for i := 0; i < numFloors; i++{
 		if cabOrderQueue.Active[i] ==-1 {
 			elevio.SetButtonLamp(2, i, false)
@@ -171,5 +185,29 @@ func GetDirection(currentFloor int, currentOrder int) int{
 	} else{
 		return -1
 	}
-
 }
+
+
+func GetNewOrder() Order{ //returnerer en ordre med floor: -1 om det ikke er noen ordre.
+	newOrder := Order{}
+	for i := 0; i < numFloors; i++{
+		if IsThereOrder(i, 2, elevatorID){
+			//det finnes en cab order
+			newOrder.Floor = i 
+			newOrder.ButtonType = 2
+			return newOrder
+		}
+		for j := 0; j < numHallButtons; j++{
+			if IsThereOrder(i, j, elevatorID){
+				newOrder.Floor = i
+				newOrder.ButtonType = j
+				return newOrder
+			}
+			
+		}
+	}
+	newOrder.Floor = -1
+	newOrder.ButtonType = -1
+	return newOrder
+}
+
