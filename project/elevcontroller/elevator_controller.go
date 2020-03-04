@@ -1,10 +1,10 @@
-package elevController
+package elevcontroller
 
 import(
 	"fmt"
 	"../elevio"
 	"../orderhandler"
-	"../time"
+	"../timer"
 
 )
 
@@ -80,6 +80,8 @@ func StopElevator(){
 	OpenDoor(3)
 }
 
-func OpenDoor(sec time.Duration){
-	//HA I TIMER MODUL??
+func OpenDoor(seconds time.Duration) {
+	elevio.SetDoorOpenLamp(true)
+	time.Sleep(seconds * time.Second)
+	elevio.SetDoorOpenLamp(false)
 }

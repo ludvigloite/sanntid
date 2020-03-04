@@ -1,7 +1,9 @@
+package timer
 
-import
+/*
+import(
   "time"
-
+)
 
 var timerFlag int
 
@@ -45,3 +47,6 @@ func DoorTimer(finished chan<- bool, start <-chan bool, doorOpenTime time.Durati
 }
 
 motorTimedOut.Stop()
+
+
+*/
