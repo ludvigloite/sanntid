@@ -8,7 +8,6 @@ import (
 var localIP string
 
 //Sets up localIP.
-//net.TCPAddr is a struct containing an IP, Port and Zone (IPv6 scoped addressing zone)
 
 func LocalIP() (string, error) {
 	if localIP == "" {
