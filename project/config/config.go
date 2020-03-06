@@ -3,6 +3,7 @@ package config
 
 import( 
 	"time"
+	"../elevio"
 )
 
 const(
@@ -20,5 +21,9 @@ const(
 
 )
 
-type Channels struct{
+type Channels struct {
+	drv_buttons 		chan elevio.ButtonEvent
+    drv_floors  		chan int
+    open_door			chan bool
+    close_door			chan bool
 }

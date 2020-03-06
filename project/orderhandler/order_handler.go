@@ -12,10 +12,12 @@ package orderhandler
 import(
 	"fmt"
 	"../elevio"
+	"../config"
 )
 
-const numFloors = 4
-const numHallButtons = 2
+const numFloors = config.NUM_FLOORS
+const numHallButtons = config.NUM_HALLBUTTONS
+
 
 var elevatorID int //kan byttes underveis
 var elevatorRank int //bytter underveis
