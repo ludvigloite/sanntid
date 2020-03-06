@@ -22,5 +22,5 @@ func main(){
 
 
     elevcontroller.Initialize()
-    fsm.RunElevator()
+    go fsm.RunElevator()
 }
