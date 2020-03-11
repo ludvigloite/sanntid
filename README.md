@@ -18,8 +18,6 @@
 ## Hvordan update branch til Master
 https://gist.github.com/santisbon/a1a60db1fb8eecd1beeacd986ae5d3ca
 
-# Updating a feature branch
-
 First we'll update your local master branch. Go to your local project and check out the branch you want to merge into (your local master branch)
 ```bash
 $ git checkout master
