@@ -14,14 +14,14 @@
 5. Man kan nå kjøre main.go så vil heisen kjøre.
 
 
-## Kjør programmet vårt
+## Kjør programmet med ELEV_ID
 1. Naviger til mappen
-2. ELEV_ID er enten 1, 2 eller 3 
+2. NUMMER er enten 1, 2 eller 3 
 ```bash
 $ go build main.go
-$ ./main 'ELEV_ID'
+$ ./main -elevID='NUMMER'
 ```
-3. Int-en du satt inn som elev_id ligger på os.Args[1] i programkoden.
+
 
 
 
