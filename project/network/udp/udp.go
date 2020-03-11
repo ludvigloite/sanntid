@@ -4,7 +4,7 @@ reciever using listen(...), and broadcast over the channel sender using
 bcast(...). Init initializes the channels and the goroutines.
 */
 
-package network
+package udp
 
 import(
   "fmt"

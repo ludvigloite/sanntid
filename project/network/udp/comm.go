@@ -22,16 +22,17 @@ func messaging(){
 //Function that lets a packet be sent up to ten times if no ack is recived
 func sendTimeOut(timeOut chan bool, sender chan Packet, reciever chan Packet){
   var senderPacket Packet
-  var reciverPacket Packet
   switch expression {
-  senderPacket->sender
+  sender<-senderPacket
   case senderPacket.message_nr < 10:
-    if reciever<-recieverPacket & senderPacket.ID == recieverPacket.ID { //Funker dette??
+    if recieverPacket :<- reciever & senderPacket.ID == recieverPacket.ID { //Funker dette??
       time.Sleep(0.05 * time.Second)
+      fmt.Println("Retrying to send package. message_nr: ", message_nr)
       senderPacket.message_nr++
-      senderPacket->sender
+      sender<-senderPacket
     }else{
       true->timeout
+      fmt.Println("Packet delivered!")
     }
   case timeOut<-true:
     fmt.Println("Timeout. Packet used too long time to be sent.")
