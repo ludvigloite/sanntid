@@ -10,8 +10,8 @@ import(
   "fmt"
   "strconv"
   "net"
-  "./bcast"
-  "./localip"
+  "../bcast"
+  "../localip"
   //".../setup"
 )
 
@@ -26,15 +26,25 @@ const buffer = 1024
 const broadcastAddr = "255.255.255.255"
 
 //Trenger vi ha denne et annet sted???
-type Packet struct{
+type Packet struct {
   ID                int
-  timestamp         int
-  error_id          int
-  state             int
-  current_order     int
-  message_nr        int
-  order_list        [3][4]int
-  confirmed_orders  [3][4]int
+  Timestamp         int
+  Error_id          int
+  State             int
+  Current_order     int
+  Message_nr        int
+  Order_list        [3][4]int
+  Confirmed_orders  [3][4]int
+}
+
+
+func InitPacket(packet Packet){
+  packet.ID                 = 0
+  packet.Timestamp          = 0
+  packet.Error_id           = 0
+  packet.State              = 0       
+  packet.Current_order      = 0     
+  packet.Message_nr         = 0
 }
 
 
@@ -46,7 +56,7 @@ func Init(rPort int, wPort int) (<-chan Packet, chan<- Packet){
   return reciever, sender
 }
 
-func listen(reciever chan Packet, port int){
+func listen(reciever <-chan Packet, port int){
   //Set up connection to listen to
   localAddr, _ := net.ResolveUDPAddr("udp", strconv.Itoa(port))
   conn, err := net.ListenUDP("udp", localAddr)
@@ -61,7 +71,7 @@ func listen(reciever chan Packet, port int){
   }
 }
 
-func broadcast(sender chan Packet, port int){
+func broadcast(sender chan<-Packet, port int){
   localIPString, err := localip.LocalIP()
   localIP := net.ParseIP(localIPString)
   var localIPAddr net.UDPAddr
