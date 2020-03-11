@@ -5,6 +5,7 @@ import(
 	"../orderhandler"
 	"../config"
 	"fmt"
+	"time"
 )
 
 
@@ -44,6 +45,32 @@ func InitializeLights(numFloors int){ //NB: Endra her navn til numHallButtons
 
 }
 
+func TestReceiver(ch config.NetworkChannels){
+	for {
+		select {
+		case p := <-ch.PeerUpdateCh:
+			fmt.Printf("Peer update:\n")
+			fmt.Printf("  Peers:    %q\n", p.Peers)
+			fmt.Printf("  New:      %q\n", p.New)
+			fmt.Printf("  Lost:     %q\n", p.Lost)
+
+		case a := <-ch.ReceiverCh:
+			//kommer ikke inn her
+			fmt.Printf("Received: %#v\n", a.Order_list)
+		}
+	}
+}
+
+func SendMsg(TransmitterCh chan <- config.Packet){
+	Msg := config.Packet{}
+	for{
+		Msg.Order_list = orderhandler.GetHallOrderQueue()
+		fmt.Println("KØ:   ",orderhandler.GetHallOrderQueue())
+		TransmitterCh <- Msg
+		//fmt.Println(Msg)
+		time.Sleep(5*time.Second)
+	}
+}
 
 
 /*	BRUKES IKKE, MEN KANSKJE TIL TESTING SENERE?

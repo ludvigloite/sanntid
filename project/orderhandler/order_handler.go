@@ -57,6 +57,7 @@ func GetCurrentDir()int {return currentDir}
 func GetCurrentFloor()int {return currentFloor}
 func GetElevID()int {return elevatorID}
 func GetElevRank()int {return elevatorRank}
+func GetHallOrderQueue()[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int{return *hallOrderQueue}
 
 
 
