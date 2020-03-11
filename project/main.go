@@ -28,7 +28,7 @@ import(
 
 func main(){
 
-    elevIDPtr := flag.Int("elevID",42,"an int")
+    elevIDPtr := flag.Int("elevID",1,"an int")
 
     flag.Parse()
     fmt.Println("Elevator ID: ", *elevIDPtr)
@@ -50,7 +50,7 @@ func main(){
 		ReceiverCh : make(chan config.Packet),
 	}
 
-	go peers.Transmitter(config.SERVER_PORT, "heis", networkChannels.PeerTxEnable)
+	go peers.Transmitter(config.SERVER_PORT, "hei22", networkChannels.PeerTxEnable)
 	go peers.Receiver(config.SERVER_PORT, networkChannels.PeerUpdateCh)
 
 	go bcast.Transmitter(config.BROADCAST_PORT, networkChannels.TransmitterCh)

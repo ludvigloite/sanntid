@@ -197,3 +197,6 @@ func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres 
 	}
 }
 
+func MergeQueues(){
+	
+}
