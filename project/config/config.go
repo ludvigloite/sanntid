@@ -7,6 +7,11 @@ import(
 )
 
 const(
+	ELEV_ID				= 1 //Dette kan ikke hardkodes
+	ELEV_RANK			= 1
+)
+
+const(
 	NUM_FLOORS 			= 4
 	NUM_HALLBUTTONS 	= 2
 	DOOR_OPEN_TIME 		= 3 * time.Second 

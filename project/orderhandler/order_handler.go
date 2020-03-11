@@ -10,13 +10,9 @@
 package orderhandler
 
 import(
-	"fmt"
 	"../elevio"
 	"../config"
 )
-
-const numFloors = config.NUM_FLOORS
-const numHallButtons = config.NUM_HALLBUTTONS
 
 
 var elevatorID int //kan byttes underveis
@@ -36,7 +32,7 @@ var currentDir int //hvilken retning har heisen. -1 , 0 , 1. Kun 0 i spesielle t
 
 type CabOrders struct{
 	ElevID int //hvilken elevator cab callsa tilhører
-	Active [numFloors]int //hvilke av de fire knappene som er aktive // !!!! -1:inaktiv, 0:aktiv 2:executing?
+	Active [config.NUM_FLOORS]int //hvilke av de fire knappene som er aktive // !!!! -1:inaktiv, 0:aktiv 2:executing?
 }
 type Order struct{
 	Floor int
@@ -46,7 +42,7 @@ type Order struct{
 
 var cabOrderQueue = &CabOrders{}//variabelen som kan endres på
 
-var hallOrderQueue = &[numFloors][numHallButtons] int{} //inneholder en liste med alle hall orders. -1 om inaktiv. 0 om den er aktiv, men ikke tatt. ellers ID til heisen om en av dem skal utføre ordren.
+var hallOrderQueue = &[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int{} //inneholder en liste med alle hall orders. -1 om inaktiv. 0 om den er aktiv, men ikke tatt. ellers ID til heisen om en av dem skal utføre ordren.
 //nullte element er opp, første element er ned.
 
 
@@ -56,9 +52,9 @@ func InitQueues(){
 }
 
 
-func InitHallQueue(queue *[numFloors][numHallButtons] int){
-	for i := 0; i < numFloors; i++{
-		for j := 0; j < numHallButtons; j++{
+func InitHallQueue(queue *[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int){
+	for i := 0; i < config.NUM_FLOORS; i++{
+		for j := 0; j < config.NUM_HALLBUTTONS; j++{
 			queue[i][j] = -1
 		}
 	}
@@ -66,7 +62,7 @@ func InitHallQueue(queue *[numFloors][numHallButtons] int){
 
 func InitCabQueue(queue *CabOrders){
 	queue.ElevID = elevatorID
-	for i := 0; i < numFloors; i++{
+	for i := 0; i < config.NUM_FLOORS; i++{
 		queue.Active[i] = -1
 	}
 }
@@ -89,9 +85,6 @@ func SetCurrentOrder(floor int){
 func GetCurrentOrder()int {return currentOrder}
 func GetCurrentDir()int {return currentDir}
 func GetCurrentFloor()int {return currentFloor}
-func GetElevatorID()int {return elevatorID}
-func GetNumFloors()int {return numFloors}
-func GetNumHallButtons()int {return numHallButtons}
 
 ////////////// ARBITRATOR UNDER ? //////////////
 
@@ -152,19 +145,20 @@ func AddOrder(floor int, buttonType int, elevatorID int){ //elevatorID er 0 om d
 	} else{
 		hallOrderQueue[floor][buttonType] = elevatorID //active
 	}
-	fmt.Println(cabOrderQueue.Active)
-	fmt.Println(hallOrderQueue)
+	UpdateLights()
+	//fmt.Println(cabOrderQueue.Active)
+	//fmt.Println(hallOrderQueue)
 }
 
 func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres mer effektiv. NumHallButtons er jo bare 2..Evt lage en funskjon for hall-lights og en for cab-lights
-	for i := 0; i < numFloors; i++{
+	for i := 0; i < config.NUM_FLOORS; i++{
 		if cabOrderQueue.Active[i] ==-1 {
 			elevio.SetButtonLamp(elevio.BT_Cab, i, false)
 		} else{
 			elevio.SetButtonLamp(elevio.BT_Cab, i, true)
 		}
 
-		for j := 0; j < numHallButtons; j++{
+		for j := 0; j < config.NUM_HALLBUTTONS; j++{
 			if i != 0 && j == 1{ //hvis det ikke er 1 etasje eller 4 etasje.
 				if hallOrderQueue[i][j] == -1{
 				elevio.SetButtonLamp(elevio.BT_HallDown, i, false)
@@ -172,7 +166,7 @@ func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres 
 				elevio.SetButtonLamp(elevio.BT_HallDown, i, true)
 				}
 			}
-			if i != numFloors && j == 0{
+			if i != config.NUM_FLOORS && j == 0{
 				if hallOrderQueue[i][j] == -1{
 				elevio.SetButtonLamp(elevio.BT_HallUp, i, false)
 				} else{
@@ -198,14 +192,14 @@ func GetDirection(currentFloor int, currentOrder int) int{
 
 func GetNewOrder() Order{ //returnerer en ordre med floor: -1 om det ikke er noen ordre.
 	newOrder := Order{}
-	for i := 0; i < numFloors; i++{
+	for i := 0; i < config.NUM_FLOORS; i++{
 		if IsThereOrder(i, 2, elevatorID){
 			//det finnes en cab order
 			newOrder.Floor = i 
 			newOrder.ButtonType = 2
 			return newOrder
 		}
-		for j := 0; j < numHallButtons; j++{
+		for j := 0; j < config.NUM_HALLBUTTONS; j++{
 			if IsThereOrder(i, j, elevatorID){
 				newOrder.Floor = i
 				newOrder.ButtonType = j
