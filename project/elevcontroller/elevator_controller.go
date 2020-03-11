@@ -5,7 +5,6 @@ import(
 	"../orderhandler"
 	"../config"
 	"fmt"
-	//"os"
 )
 
 
@@ -15,7 +14,6 @@ func Initialize(elevID int){
 	InitializeLights(config.NUM_FLOORS)
 	orderhandler.SetElevatorID(elevID)
 
-	//orderhandler.SetElevatorID(1) //	SETT RIKTIG ELEVATOR ID
     //Wipe alle ordre til nå??
 }
 

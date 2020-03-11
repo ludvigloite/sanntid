@@ -29,7 +29,6 @@ func RunElevator(ch config.FSMChannels){
 	elevio.SetMotorDirection(elevio.MD_Down)
 
 	a := <- ch.Drv_floors
-
 	for a == -1{
 		a = <- ch.Drv_floors
 	}

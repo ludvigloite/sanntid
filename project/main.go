@@ -7,7 +7,6 @@ import(
     "./elevio"
     "./timer"
     //"./orderhandler"
-    "network/udp"
 
     "fmt"
     "flag"
