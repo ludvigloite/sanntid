@@ -19,16 +19,22 @@ var elevatorID int //kan byttes underveis
 var elevatorRank int //bytter underveis
 var isMaster = false
 
+var currentOrder int //sier hvilken etasje heisen er på vei til. -1 om den ikke har noen ordre.
+var currentFloor int //hvilken etasje er heisen i nå. 0 , 1 , 2 , 3
+var currentDir int //hvilken retning har heisen. -1 , 0 , 1. Kun 0 i spesielle tilfeller. Er -1 / 1 også når den stopper i et floor. Den skal jo tross alt videre i samme retning.
+
+var cabOrderQueue = &CabOrders{}//variabelen som kan endres på
+var hallOrderQueue = &[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int{} //inneholder en liste med alle hall orders. -1 om inaktiv. 0 om den er aktiv, men ikke tatt. ellers ID til heisen om en av dem skal utføre ordren.
+//nullte element er opp, første element er ned.
+
+
+
 type ElevState int
 const(
 	Idle = 0
 	Executing = 1
 	Lost = 2
 )
-
-var currentOrder int //sier hvilken etasje heisen er på vei til. -1 om den ikke har noen ordre.
-var currentFloor int //hvilken etasje er heisen i nå. 0 , 1 , 2 , 3
-var currentDir int //hvilken retning har heisen. -1 , 0 , 1. Kun 0 i spesielle tilfeller. Er -1 / 1 også når den stopper i et floor. Den skal jo tross alt videre i samme retning.
 
 type CabOrders struct{
 	ElevID int //hvilken elevator cab callsa tilhører
@@ -40,17 +46,25 @@ type Order struct{
 }
 
 
-var cabOrderQueue = &CabOrders{}//variabelen som kan endres på
 
-var hallOrderQueue = &[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int{} //inneholder en liste med alle hall orders. -1 om inaktiv. 0 om den er aktiv, men ikke tatt. ellers ID til heisen om en av dem skal utføre ordren.
-//nullte element er opp, første element er ned.
+func SetElevatorID(ID int){elevatorID = ID}
+func SetCurrentFloor(floor int){currentFloor = floor}
+func SetCurrentDir(dir int){currentDir = dir}
+func SetCurrentOrder(floor int){currentOrder = floor}
+
+func GetCurrentOrder()int {return currentOrder}
+func GetCurrentDir()int {return currentDir}
+func GetCurrentFloor()int {return currentFloor}
+func GetElevID()int {return elevatorID}
+func GetElevRank()int {return elevatorRank}
+
+
 
 
 func InitQueues(){
 	InitCabQueue(cabOrderQueue)
 	InitHallQueue(hallOrderQueue)
 }
-
 
 func InitHallQueue(queue *[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int){
 	for i := 0; i < config.NUM_FLOORS; i++{
@@ -67,38 +81,52 @@ func InitCabQueue(queue *CabOrders){
 	}
 }
 
-func SetElevatorID(ID int){
-	elevatorID = ID
-}
 
-func SetCurrentFloor(floor int){
-	currentFloor = floor
-}
+func GetDirection(currentFloor int, currentOrder int) int{
+	if currentOrder == -1 || currentOrder == currentFloor { //enten har den ikke noen retning, eller så er den på riktig floor
+		return 0
 
-func SetCurrentDir(dir int){
-	currentDir = dir
-}
+	} else if currentFloor < currentOrder { //heisen er lavere enn sin destinasjon -> kjører oppover
+		return 1
 
-func SetCurrentOrder(floor int){
-	currentOrder = floor
-}
-func GetCurrentOrder()int {return currentOrder}
-func GetCurrentDir()int {return currentDir}
-func GetCurrentFloor()int {return currentFloor}
-func GetElevID()int {return elevatorID}
-func GetElevRank()int {return elevatorRank}
-
-////////////// ARBITRATOR UNDER ? //////////////
-
-func WhatElevatorShouldTakeOrder(){ //Evt whatOrderSHouldthisElevatorTake()??
-
+	} else{
+		return -1
+	}
 }
 
 
 
+func GetNewOrder() Order{ //returnerer en ordre med floor: -1 om det ikke er noen ordre.
+	newOrder := Order{}
+	for i := 0; i < config.NUM_FLOORS; i++{
+		if IsThereOrder(i, 2, elevatorID){
+			//det finnes en cab order
+			newOrder.Floor = i 
+			newOrder.ButtonType = 2
+			return newOrder
+		}
+		for j := 0; j < config.NUM_HALLBUTTONS; j++{
+			if IsThereOrder(i, j, elevatorID){
+				newOrder.Floor = i
+				newOrder.ButtonType = j
+				return newOrder
+			}
+			
+		}
+	}
+	newOrder.Floor = -1
+	newOrder.ButtonType = -1
+	return newOrder
+}
 
-
-////////////// ARBITRATOR OVER ? //////////////
+func AddOrder(floor int, buttonType int, elevatorID int){ //elevatorID er 0 om det bare skal legges inn ordre uten at noen tar den.
+	if buttonType == 2{ //caborder
+		cabOrderQueue.Active[floor] = elevatorID //active
+	} else{
+		hallOrderQueue[floor][buttonType] = elevatorID //active
+	}
+	UpdateLights()
+}
 
 
 
@@ -141,17 +169,6 @@ func ClearFloor(floor int){ //fjerner alle ordre i denne etasjen fra køene. Kan
 	cabOrderQueue.Active[floor] = -1
 }
 
-func AddOrder(floor int, buttonType int, elevatorID int){ //elevatorID er 0 om det bare skal legges inn ordre uten at noen tar den.
-	if buttonType == 2{ //caborder
-		cabOrderQueue.Active[floor] = elevatorID //active
-	} else{
-		hallOrderQueue[floor][buttonType] = elevatorID //active
-	}
-	UpdateLights()
-	//fmt.Println(cabOrderQueue.Active)
-	//fmt.Println(hallOrderQueue)
-}
-
 func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres mer effektiv. NumHallButtons er jo bare 2..Evt lage en funskjon for hall-lights og en for cab-lights
 	for i := 0; i < config.NUM_FLOORS; i++{
 		if cabOrderQueue.Active[i] ==-1 {
@@ -177,41 +194,5 @@ func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres 
 			}
 		}
 	}
-}
-
-func GetDirection(currentFloor int, currentOrder int) int{
-	if currentOrder == -1 || currentOrder == currentFloor { //enten har den ikke noen retning, eller så er den på riktig floor
-		return 0
-
-	} else if currentFloor < currentOrder { //heisen er lavere enn sin destinasjon -> kjører oppover
-		return 1
-
-	} else{
-		return -1
-	}
-}
-
-
-func GetNewOrder() Order{ //returnerer en ordre med floor: -1 om det ikke er noen ordre.
-	newOrder := Order{}
-	for i := 0; i < config.NUM_FLOORS; i++{
-		if IsThereOrder(i, 2, elevatorID){
-			//det finnes en cab order
-			newOrder.Floor = i 
-			newOrder.ButtonType = 2
-			return newOrder
-		}
-		for j := 0; j < config.NUM_HALLBUTTONS; j++{
-			if IsThereOrder(i, j, elevatorID){
-				newOrder.Floor = i
-				newOrder.ButtonType = j
-				return newOrder
-			}
-			
-		}
-	}
-	newOrder.Floor = -1
-	newOrder.ButtonType = -1
-	return newOrder
 }
 
