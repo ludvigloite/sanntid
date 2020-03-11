@@ -5,13 +5,15 @@ import(
 	"../orderhandler"
 	"../config"
 	"fmt"
+	//"os"
 )
 
 
-func Initialize(){
+func Initialize(elevID int){
     elevio.Init("localhost:15657", config.NUM_FLOORS)
    	orderhandler.InitQueues()
 	InitializeLights(config.NUM_FLOORS)
+	orderhandler.SetElevatorID(elevID)
 
 	//orderhandler.SetElevatorID(1) //	SETT RIKTIG ELEVATOR ID
     //Wipe alle ordre til nå??
