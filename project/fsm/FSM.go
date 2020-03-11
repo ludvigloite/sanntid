@@ -33,28 +33,28 @@ func Init(floor_scanner <- chan int){
 	orderhandler.SetCurrentDir(0)
 	elevio.SetFloorIndicator(a)
 	fmt.Println("Heisen er intialisert og venter i etasje nr ", a+1)
-	state := IDLE
+	//state := IDLE
 }
 
 
-func RunElevator(ch config.Channels){
+func RunElevator(ch config.FSMChannels){
 	state := IDLE
 
 	///////////////////////////////////
-	//	ch.drv_buttons
-    //	ch.drv_floors
-    //	ch.open_door
-    //	ch.close_door
+	//	ch.Drv_buttons
+    //	ch.Drv_floors
+    //	ch.Open_door
+    //	ch.Close_door
     //////////////////////////////////
 
     /* 		INIT 	*/
     
 	elevio.SetMotorDirection(elevio.MD_Down)
 
-	a := <- ch.drv_floors
+	a := <- ch.Drv_floors
 
 	for a == -1{
-		a = <- ch.drv_floors
+		a = <- ch.Drv_floors
 	}
 
 	
@@ -73,7 +73,7 @@ func RunElevator(ch config.Channels){
 			//fmt.Println("JEG ER I IDLE")
 			orderhandler.UpdateLights()
 			select{
-			case order := <- ch.drv_buttons:
+			case order := <- ch.Drv_buttons:
 				fmt.Println("Knapp er trykket fra IDLE ",int(order.Button), order.Floor)
 				//elevio.SetButtonLamp(order.Button, order.Floor, true)
 				orderhandler.AddOrder(order.Floor, int(order.Button),0) //0 fordi det bare skal legges til ordre. Ingen har tatt den enda.
@@ -101,13 +101,13 @@ func RunElevator(ch config.Channels){
 			elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))
 			orderhandler.UpdateLights()
 			select{
-			case order := <- ch.drv_buttons: //Fått inn knappetrykk
+			case order := <- ch.Drv_buttons: //Fått inn knappetrykk
 				fmt.Println("Knapp er trykket fra ACTIVE ",int(order.Button), order.Floor)
 				//elevio.SetButtonLamp(order.Button, order.Floor, true)
 				orderhandler.AddOrder(order.Floor, int(order.Button),0) //0 fordi det bare skal legges til ordre. Ingen har tatt den enda.
 				orderhandler.UpdateLights()
 
-			case reachedFloor := <- ch.drv_floors:
+			case reachedFloor := <- ch.Drv_floors:
 				orderhandler.SetCurrentFloor(reachedFloor)
 				elevio.SetFloorIndicator(reachedFloor)
 				if orderhandler.ShouldStopAtFloor(reachedFloor, orderhandler.GetCurrentOrder(), orderhandler.GetElevatorID()){ //Kan jeg ikke bare ta variablene rett fra orderhandler??
@@ -115,7 +115,7 @@ func RunElevator(ch config.Channels){
 
 					elevio.SetDoorOpenLamp(true)
 					orderhandler.ClearFloor(reachedFloor)
-					ch.open_door <- true
+					ch.Open_door <- true
 					state = DOOR_OPEN
 
 				}
@@ -142,14 +142,14 @@ func RunElevator(ch config.Channels){
 */
 
 			select{
-			case order := <- ch.drv_buttons: //Fått inn knappetrykk //hvis det er en knapp på denne etasjen skal timeren starte på nytt
+			case order := <- ch.Drv_buttons: //Fått inn knappetrykk //hvis det er en knapp på denne etasjen skal timeren starte på nytt
 				fmt.Println("Knapp er trykket fra ACTIVE ",int(order.Button), order.Floor)
 				//elevio.SetButtonLamp(order.Button, order.Floor, true)
 				orderhandler.AddOrder(order.Floor, int(order.Button),0) //0 fordi det bare skal legges til ordre. Ingen har tatt den enda.
 				orderhandler.UpdateLights()
 
 
-			case <- ch.close_door:
+			case <- ch.Close_door:
 				//døren skal lukkes. Det har gått 3 sek.
 				fmt.Println("close door___")
 				elevio.SetDoorOpenLamp(false) //slår av lys

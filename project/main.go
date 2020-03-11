@@ -4,6 +4,8 @@ import(
     "./fsm"
     "./elevcontroller"
     "./config"
+    "./elevio"
+    "./timer"
     //"fmt"
 )
 
@@ -24,16 +26,17 @@ func main(){
 
     elevcontroller.Initialize()
 
-    fsmChannels := config.Channels{
-    drv_buttons: make(chan elevio.ButtonEvent), 
-    drv_floors: make(chan int),  
-    open_door: make(chan bool), 
-    close_door: make(chan bool),
+    fsmChannels := config.FSMChannels{
+    Drv_buttons: make(chan elevio.ButtonEvent), 
+    Drv_floors: make(chan int),  
+    Open_door: make(chan bool), 
+    Close_door: make(chan bool),
 	}
 
-	go elevio.PollButtons(New_Channels.drv_buttons)
-    go elevio.PollFloorSensor(New_Channels.drv_floors)
-    go timer.DoorTimer(New_Channels.close_door,New_Channels.open_door,config.DOOR_OPEN_TIME)
+
+	go elevio.PollButtons(fsmChannels.Drv_buttons)
+    go elevio.PollFloorSensor(fsmChannels.Drv_floors)
+    go timer.DoorTimer(fsmChannels.Close_door,fsmChannels.Open_door,config.DOOR_OPEN_TIME)
     //Legg true på open_door når dør skal åpnes
     //skrives true til close_door når tiden er ute
 

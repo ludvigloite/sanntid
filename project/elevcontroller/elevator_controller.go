@@ -5,6 +5,7 @@ import(
 	"time"
 	"../elevio"
 	"../orderhandler"
+	"../config"
 	//"../timer"
 
 )
@@ -12,7 +13,7 @@ import(
 //ha timer med her??
 
 func Initialize(){
-    elevio.Init("localhost:15657", orderhandler.GetNumFloors())
+    elevio.Init("localhost:15657", config.NUM_FLOORS)
     orderhandler.SetElevatorID(1) //BØR IKKE HARDKODES!!
     //Wipe alle ordre til nå??
 
@@ -22,6 +23,16 @@ func Initialize(){
 	//InitializeElevator()
 	//Gjør det som main starter med.
 
+}
+
+func checkAndAddOrder(Drv_buttons <- chan elevio.ButtonEvent){
+	for{
+		select{
+			case order := <- Drv_buttons: //Fått inn knappetrykk
+				fmt.Println("Knapp er trykket ", int(order.Button), order.Floor)
+				orderhandler.AddOrder(order.Floor, int(order.Button),0) //0 fordi det bare skal legges til ordre. Ingen har tatt den enda.
+				orderhandler.UpdateLights()
+	}
 }
 
 /*

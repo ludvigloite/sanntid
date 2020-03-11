@@ -21,9 +21,9 @@ const(
 
 )
 
-type Channels struct {
-	drv_buttons 		chan elevio.ButtonEvent
-    drv_floors  		chan int
-    open_door			chan bool
-    close_door			chan bool
+type FSMChannels struct {
+	Drv_buttons 		chan elevio.ButtonEvent
+    Drv_floors  		chan int
+    Open_door			chan bool
+    Close_door			chan bool
 }
