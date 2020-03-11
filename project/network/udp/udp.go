@@ -27,11 +27,12 @@ const broadcastAddr = "255.255.255.255"
 
 //Trenger vi ha denne et annet sted???
 type Packet struct{
-  packetID          int
+  ID          int
   timestamp         int
   error_id          int
   state             int
-  current_order      int
+  current_order     int
+  message_nr        int
   order_list        [3][4]int
   confirmed_orders  [3][4]int
 }
