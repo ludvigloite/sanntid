@@ -11,9 +11,9 @@ import(
 
 func Initialize(elevID int){
     elevio.Init("localhost:15657", config.NUM_FLOORS)
-   	orderhandler.InitQueues()
 	InitializeLights(config.NUM_FLOORS)
 	orderhandler.SetElevatorID(elevID)
+	orderhandler.InitQueues()
 
     //Wipe alle ordre til nå??
 }

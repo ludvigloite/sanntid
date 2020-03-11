@@ -12,6 +12,7 @@ package orderhandler
 import(
 	"../elevio"
 	"../config"
+	"fmt"
 )
 
 
@@ -23,7 +24,7 @@ var currentOrder int //sier hvilken etasje heisen er på vei til. -1 om den ikke
 var currentFloor int //hvilken etasje er heisen i nå. 0 , 1 , 2 , 3
 var currentDir int //hvilken retning har heisen. -1 , 0 , 1. Kun 0 i spesielle tilfeller. Er -1 / 1 også når den stopper i et floor. Den skal jo tross alt videre i samme retning.
 
-var cabOrderQueue = &CabOrders{}//variabelen som kan endres på
+
 var hallOrderQueue = &[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int{} //inneholder en liste med alle hall orders. -1 om inaktiv. 0 om den er aktiv, men ikke tatt. ellers ID til heisen om en av dem skal utføre ordren.
 //nullte element er opp, første element er ned.
 
@@ -44,6 +45,8 @@ type Order struct{
 	Floor int
 	ButtonType int
 }
+
+var cabOrderQueue = &CabOrders{}//variabelen som kan endres på
 
 
 
@@ -77,6 +80,7 @@ func InitHallQueue(queue *[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int){
 
 func InitCabQueue(queue *CabOrders){
 	queue.ElevID = elevatorID
+	fmt.Println("->>",queue.ElevID)
 	for i := 0; i < config.NUM_FLOORS; i++{
 		queue.Active[i] = -1
 	}
@@ -133,6 +137,7 @@ func AddOrder(floor int, buttonType int, elevatorID int){ //elevatorID er 0 om d
 
 func IsThereOrder(floor int, buttonType int, elevID int) bool{ //buttontype: 0=opp 1=ned 2=cabOrder //kan kanskje bare implementeres i ShouldStopAtFloor //kan kanskje fjerne elevID og heller bruke global variabel
 	if buttonType == 2{
+		//fmt.Println(elevID," ... ", cabOrderQueue.ElevID)
 		if cabOrderQueue.Active[floor] == 0 && cabOrderQueue.ElevID == elevID{
 			return true
 		}
