@@ -3,6 +3,12 @@ package config
 
 import( 
 	"time"
+	"../elevio"
+)
+
+const(
+	ELEV_ID				= 1 //Dette kan ikke hardkodes
+	ELEV_RANK			= 1
 )
 
 const(
@@ -20,5 +26,9 @@ const(
 
 )
 
-type Channels struct{
+type FSMChannels struct {
+	Drv_buttons 		chan elevio.ButtonEvent
+    Drv_floors  		chan int
+    Open_door			chan bool
+    Close_door			chan bool
 }
