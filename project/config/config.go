@@ -6,10 +6,12 @@ import(
 	"../elevio"
 )
 
+/* DETTE KAN IKKE HARDKODES
 const(
-	ELEV_ID				= 1 //Dette kan ikke hardkodes
+	ELEV_ID				= const(os.Args[1])
 	ELEV_RANK			= 1
 )
+*/
 
 const(
 	NUM_FLOORS 			= 4
@@ -31,4 +33,8 @@ type FSMChannels struct {
     Drv_floors  		chan int
     Open_door			chan bool
     Close_door			chan bool
+}
+
+type NETWORKChannels struct{
+
 }

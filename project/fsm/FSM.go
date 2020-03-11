@@ -14,23 +14,6 @@ const(
 	UNDEFINED = "UNDEFINED"
 )
 
-func Init(floor_scanner <- chan int){
-	elevio.SetMotorDirection(elevio.MD_Down)
-
-	a := <- floor_scanner
-
-	for a == -1{
-		a = <- floor_scanner
-	}
-	
-
-	elevio.SetMotorDirection(elevio.MD_Stop)
-	orderhandler.SetCurrentFloor(a)
-	orderhandler.SetCurrentDir(0)
-	elevio.SetFloorIndicator(a)
-	fmt.Println("Heisen er intialisert og venter i etasje nr ", a+1)
-}
-
 
 func RunElevator(ch config.FSMChannels){
 	state := IDLE
@@ -43,7 +26,6 @@ func RunElevator(ch config.FSMChannels){
     //////////////////////////////////
 
     /* 		INIT 	*/
-    
 	elevio.SetMotorDirection(elevio.MD_Down)
 
 	a := <- ch.Drv_floors
@@ -52,32 +34,29 @@ func RunElevator(ch config.FSMChannels){
 		a = <- ch.Drv_floors
 	}
 
-	
-
 	elevio.SetMotorDirection(elevio.MD_Stop)
 	orderhandler.SetCurrentFloor(a)
 	orderhandler.SetCurrentDir(0)
 	elevio.SetFloorIndicator(a)
 	fmt.Println("Heisen er intialisert og venter i etasje nr ", a+1)
+	/*		INIT FERDIG		*/
 	
 
 
 	for{
 		orderhandler.UpdateLights()
+
 		switch state{
 		case IDLE: //heis er IDLE. Skal ikke gjøre noe med mindre den får knappetrykk eller får inn en ordre som skal utføres
 			newOrder := orderhandler.GetNewOrder()
 			if newOrder.Floor != -1{
 				fmt.Println("Det er funnet en ordre! Denne skal jeg utføre")
-				orderhandler.AddOrder(newOrder.Floor, newOrder.ButtonType, config.ELEV_ID)
+				orderhandler.AddOrder(newOrder.Floor, newOrder.ButtonType, orderhandler.GetElevID())
 				orderhandler.SetCurrentOrder(newOrder.Floor)
 				orderhandler.SetCurrentDir(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()))
 
 				state = ACTIVE
 			}
-
-
-
 
 		case ACTIVE:
 			elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))
@@ -86,7 +65,7 @@ func RunElevator(ch config.FSMChannels){
 			case reachedFloor := <- ch.Drv_floors:
 				orderhandler.SetCurrentFloor(reachedFloor)
 				elevio.SetFloorIndicator(reachedFloor)
-				if orderhandler.ShouldStopAtFloor(reachedFloor, orderhandler.GetCurrentOrder(), config.ELEV_ID){
+				if orderhandler.ShouldStopAtFloor(reachedFloor, orderhandler.GetCurrentOrder(), orderhandler.GetElevID()){
 					fmt.Println("stopping at floor")
 
 					elevio.SetDoorOpenLamp(true)
