@@ -15,3 +15,5 @@
 
 
 
+## Hvordan update branch til Master
+https://gist.github.com/santisbon/a1a60db1fb8eecd1beeacd986ae5d3ca
