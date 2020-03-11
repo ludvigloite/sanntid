@@ -14,6 +14,18 @@
 5. Man kan nå kjøre main.go så vil heisen kjøre.
 
 
+## Kjør programmet vårt
+1. Naviger til mappen
+2. ELEV_ID er enten 1, 2 eller 3 
+```bash
+$ go build main.go
+$ ./main 'ELEV_ID'
+```
+3. Int-en du satt inn som elev_id ligger på os.Args[1] i programkoden.
+
+
+
+
 
 ## Hvordan update branch til Master
 https://gist.github.com/santisbon/a1a60db1fb8eecd1beeacd986ae5d3ca
