@@ -10,8 +10,8 @@ import(
   "fmt"
   "strconv"
   "net"
-  "../bcast"
-  "../localip"
+  "./bcast"
+  "./localip"
   //".../setup"
 )
 
@@ -27,7 +27,7 @@ const broadcastAddr = "255.255.255.255"
 
 //Trenger vi ha denne et annet sted???
 type Packet struct{
-  ID          int
+  ID                int
   timestamp         int
   error_id          int
   state             int
