@@ -31,10 +31,16 @@ $ ./Desktop/Local\ Storage/heisSimulator/Simulator-v2/SimElevatorServer --port 1
 2. Åpne prosjektet
 ```bash
 $ cd Desktop/Local\ Storage/Sanntid_prosjekt/sanntid
+
 Åpne filer:
 $ subl project 
+
+Build(inne i /project):
+$ go build main.go
+
+Kjør:
+$ ./main -elevID=1 -port=10001
 ```
-3. Kjør 
 
 
 
