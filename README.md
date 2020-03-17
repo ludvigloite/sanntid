@@ -40,6 +40,7 @@ $ go build main.go
 
 Kjør:
 $ ./main -elevID=1 -port=10001
+$ ./Desktop/Local\ Storage/Sanntid_prosjekt/sanntid/project/main -elevID=1 -port=10001
 ```
 
 
