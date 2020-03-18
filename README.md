@@ -22,6 +22,30 @@ $ go build main.go
 $ ./main -elevID='NUMMER'
 ```
 
+## Linker for å kjøre Ludvigs mac
+
+1. KJØR Simulator
+```bash
+$ ./Desktop/Local\ Storage/heisSimulator/Simulator-v2/SimElevatorServer --port 10001
+```
+2. Åpne prosjektet
+```bash
+$ cd Desktop/Local\ Storage/Sanntid_prosjekt/sanntid
+
+Åpne filer:
+$ subl project 
+
+Build(inne i /project):
+$ go build main.go
+
+Kjør:
+$ ./main -elevID=1 -port=10001
+$ ./Desktop/Local\ Storage/Sanntid_prosjekt/sanntid/project/main -elevID=1 -port=10001
+```
+
+
+
+
 
 
 
