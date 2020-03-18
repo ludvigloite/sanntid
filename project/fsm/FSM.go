@@ -71,8 +71,8 @@ func RunElevator(ch config.FSMChannels){
 					fmt.Println("stopping at floor")
 
 					elevio.SetDoorOpenLamp(true)
-					orderhandler.ClearFloor(reachedFloor)
-					orderhandler.UpdateLights()
+					//orderhandler.ClearFloor(reachedFloor)
+					//orderhandler.UpdateLights()
 					ch.Open_door <- true
 
 					elevio.SetMotorDirection(elevio.MD_Stop)//
@@ -86,8 +86,8 @@ func RunElevator(ch config.FSMChannels){
 					fmt.Println("stopping at floor")
 
 					elevio.SetDoorOpenLamp(true)
-					orderhandler.ClearFloor(orderhandler.GetCurrentFloor())
-					orderhandler.UpdateLights()
+					//orderhandler.ClearFloor(orderhandler.GetCurrentFloor())
+					//orderhandler.UpdateLights()
 					ch.Open_door <- true
 
 					elevio.SetMotorDirection(elevio.MD_Stop)//
@@ -109,7 +109,11 @@ func RunElevator(ch config.FSMChannels){
 	
 				fmt.Println("closing door__")
 				elevio.SetDoorOpenLamp(false) //slår av lys
-				orderhandler.UpdateLights()
+				
+				orderhandler.ClearFloor(orderhandler.GetCurrentFloor()) //
+				orderhandler.UpdateLights() //
+
+				//orderhandler.UpdateLights()
 
 				if orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()) == 0 {
 					//kommet frem til enden.

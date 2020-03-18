@@ -57,8 +57,8 @@ func TestReceiver(ch config.NetworkChannels){
 
 		case a := <-ch.ReceiverCh:
 			//fmt.Printf("Received: %#v\n", a.Order_list)
-			fmt.Println("Mottar fra: ",a.ID," OPP \t NED") //opp ned er bare for at man skal forstå ordrekøen.
-			orderhandler.PrintHallOrderQueue(a.Order_list)
+			//fmt.Println("Mottar fra: ",a.ID," OPP \t NED") //opp ned er bare for at man skal forstå ordrekøen.
+			//orderhandler.PrintHallOrderQueue(a.Order_list)
 			if orderhandler.IsMaster(){ //Du selv er Master
 				orderhandler.MergeHallQueues(a)
 			} else if a.ID ==1 { //du mottar fra Master
@@ -77,7 +77,7 @@ func SendMsg(TransmitterCh chan <- config.Packet){
 		Msg.ID = orderhandler.GetElevID()
 		Msg.CurrentFloor = orderhandler.GetCurrentFloor()
 		Msg.State = orderhandler.GetCurrentState()
-		fmt.Println("Sender kø:   ",orderhandler.GetHallOrderQueue())
+		//fmt.Println("Sender kø:   ",orderhandler.GetHallOrderQueue())
 		TransmitterCh <- Msg
 		//fmt.Println(Msg)
 		time.Sleep(1*time.Second)
