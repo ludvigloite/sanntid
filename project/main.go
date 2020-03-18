@@ -28,13 +28,17 @@ import(
 
 func main(){
 
-    elevIDPtr := flag.Int("elevID",42,"an int")
+    //Eventuelt bør det funke å ha portnummer som elevID?
+
+    elevIDPtr := flag.Int("elevID",42,"elevator ID")
+    portPtr := flag.String("port","","port to connect to Simulator")
 
     flag.Parse()
-    fmt.Println("Elevator ID: ", *elevIDPtr)
+    fmt.Println("Elevator ID: ", *elevIDPtr, " ,  Port Number: ", *portPtr)
     elevID := *elevIDPtr
+    port := *portPtr
 
-    elevcontroller.Initialize(elevID)
+    elevcontroller.Initialize(elevID, "localhost:"+port)
 
     fsmChannels := config.FSMChannels{
     Drv_buttons: make(chan elevio.ButtonEvent), 
@@ -59,8 +63,8 @@ func main(){
 
 	go elevio.PollButtons(fsmChannels.Drv_buttons)
     go elevio.PollFloorSensor(fsmChannels.Drv_floors)
-    go timer.DoorTimer(fsmChannels.Close_door,fsmChannels.Open_door,config.DOOR_OPEN_TIME)
-    go elevcontroller.CheckAndAddOrder(fsmChannels.Drv_buttons) //Legg true på open_door når dør skal åpnes //skrives true til close_door når tiden er ute
+    go timer.DoorTimer(fsmChannels.Close_door,fsmChannels.Open_door,config.DOOR_OPEN_TIME) //Legg true på open_door når dør skal åpnes //skrives true til close_door når tiden er ute
+    go elevcontroller.CheckAndAddOrder(fsmChannels.Drv_buttons) 
 
     go elevcontroller.SendMsg(networkChannels.TransmitterCh)
     go elevcontroller.TestReceiver(networkChannels)

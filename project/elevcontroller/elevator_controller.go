@@ -9,8 +9,8 @@ import(
 )
 
 
-func Initialize(elevID int){
-    elevio.Init("localhost:15657", config.NUM_FLOORS)
+func Initialize(elevID int, localhost string){
+    elevio.Init(localhost, config.NUM_FLOORS) //"localhost:15657"
 	InitializeLights(config.NUM_FLOORS)
 	orderhandler.SetElevatorID(elevID)
 	orderhandler.InitQueues()
@@ -46,6 +46,7 @@ func InitializeLights(numFloors int){ //NB: Endra her navn til numHallButtons
 }
 
 func TestReceiver(ch config.NetworkChannels){
+	fmt.Println("Har kommet inn i TestReceiver")
 	for {
 		select {
 		case p := <-ch.PeerUpdateCh:
@@ -65,7 +66,7 @@ func SendMsg(TransmitterCh chan <- config.Packet){
 	Msg := config.Packet{}
 	for{
 		Msg.Order_list = orderhandler.GetHallOrderQueue()
-		fmt.Println("KØ:   ",orderhandler.GetHallOrderQueue())
+		fmt.Println("Sender kø:   ",orderhandler.GetHallOrderQueue())
 		TransmitterCh <- Msg
 		//fmt.Println(Msg)
 		time.Sleep(5*time.Second)

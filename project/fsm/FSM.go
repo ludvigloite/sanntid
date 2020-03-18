@@ -43,7 +43,7 @@ func RunElevator(ch config.FSMChannels){
 
 
 	for{
-		orderhandler.UpdateLights()
+		//orderhandler.UpdateLights()
 
 		switch state{
 		case IDLE: //heis er IDLE. Skal ikke gjøre noe med mindre den får knappetrykk eller får inn en ordre som skal utføres
@@ -54,12 +54,12 @@ func RunElevator(ch config.FSMChannels){
 				orderhandler.SetCurrentOrder(newOrder.Floor)
 				orderhandler.SetCurrentDir(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()))
 
+				elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))
 				state = ACTIVE
 			}
 
 		case ACTIVE:
-			elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))
-			orderhandler.UpdateLights()
+			//orderhandler.UpdateLights()
 			select{
 			case reachedFloor := <- ch.Drv_floors:
 				orderhandler.SetCurrentFloor(reachedFloor)
@@ -69,9 +69,12 @@ func RunElevator(ch config.FSMChannels){
 
 					elevio.SetDoorOpenLamp(true)
 					orderhandler.ClearFloor(reachedFloor)
+					orderhandler.UpdateLights()
 					ch.Open_door <- true
 
+					elevio.SetMotorDirection(elevio.MD_Stop)//
 					state = DOOR_OPEN
+					//orderhandler.UpdateLights()
 				}
 
 			default:
@@ -80,9 +83,12 @@ func RunElevator(ch config.FSMChannels){
 
 					elevio.SetDoorOpenLamp(true)
 					orderhandler.ClearFloor(orderhandler.GetCurrentFloor())
+					orderhandler.UpdateLights()
 					ch.Open_door <- true
 
+					elevio.SetMotorDirection(elevio.MD_Stop)//
 					state = DOOR_OPEN
+					//orderhandler.UpdateLights()
 				}
 
 			}
@@ -91,13 +97,14 @@ func RunElevator(ch config.FSMChannels){
 
 
 		case DOOR_OPEN:
-			elevio.SetMotorDirection(elevio.MD_Stop)
+			//elevio.SetMotorDirection(elevio.MD_Stop)
 
 			select{
 			case <- ch.Close_door:
 	
 				fmt.Println("closing door__")
 				elevio.SetDoorOpenLamp(false) //slår av lys
+				orderhandler.UpdateLights()
 
 				if orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()) == 0 {
 					//kommet frem til enden.
@@ -109,6 +116,7 @@ func RunElevator(ch config.FSMChannels){
 
 					state = ACTIVE
 				}
+			//orderhandler.UpdateLights()
 
 
 
