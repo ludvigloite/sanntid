@@ -9,7 +9,7 @@ import(
     "./network/peers"
     "./network/bcast"
     //"./orderhandler"
-
+    "strconv"
     "fmt"
     "flag"
 )
@@ -54,7 +54,7 @@ func main(){
 		ReceiverCh : make(chan config.Packet),
 	}
 
-	go peers.Transmitter(config.SERVER_PORT, string(elevID), networkChannels.PeerTxEnable)
+	go peers.Transmitter(config.SERVER_PORT, strconv.Itoa(elevID), networkChannels.PeerTxEnable)
 	go peers.Receiver(config.SERVER_PORT, networkChannels.PeerUpdateCh)
 
 	go bcast.Transmitter(config.BROADCAST_PORT, networkChannels.TransmitterCh)

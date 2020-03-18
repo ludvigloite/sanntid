@@ -23,19 +23,12 @@ var isMaster = false
 var currentOrder int //sier hvilken etasje heisen er på vei til. -1 om den ikke har noen ordre.
 var currentFloor int //hvilken etasje er heisen i nå. 0 , 1 , 2 , 3
 var currentDir int //hvilken retning har heisen. -1 , 0 , 1. Kun 0 i spesielle tilfeller. Er -1 / 1 også når den stopper i et floor. Den skal jo tross alt videre i samme retning.
-
+var currentState int //0: IDLE, 1: ACTIVE, 2: DOOR_OPEN, 3:UNDEFINED
 
 var hallOrderQueue = &[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int{} //inneholder en liste med alle hall orders. -1 om inaktiv. 0 om den er aktiv, men ikke tatt. ellers ID til heisen om en av dem skal utføre ordren.
 //nullte element er opp, første element er ned.
 
 
-
-type ElevState int
-const(
-	Idle = 0
-	Executing = 1
-	Lost = 2
-)
 
 type CabOrders struct{
 	ElevID int //hvilken elevator cab callsa tilhører
@@ -49,11 +42,19 @@ type Order struct{
 var cabOrderQueue = &CabOrders{}//variabelen som kan endres på
 
 
+func IsMaster()bool{
+	if elevatorID == 1{
+		return true
+	}
+	return false
+}
 
 func SetElevatorID(ID int){elevatorID = ID}
 func SetCurrentFloor(floor int){currentFloor = floor}
 func SetCurrentDir(dir int){currentDir = dir}
 func SetCurrentOrder(floor int){currentOrder = floor}
+func SetHallOrderQueue(queue [config.NUM_FLOORS][config.NUM_HALLBUTTONS] int){ *hallOrderQueue = queue}
+func SetCurrentState(state int){currentState = state}
 
 func GetCurrentOrder()int {return currentOrder}
 func GetCurrentDir()int {return currentDir}
@@ -61,6 +62,7 @@ func GetCurrentFloor()int {return currentFloor}
 func GetElevID()int {return elevatorID}
 func GetElevRank()int {return elevatorRank}
 func GetHallOrderQueue()[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int{return *hallOrderQueue}
+func GetCurrentState()int{return currentState}
 
 
 
@@ -103,6 +105,16 @@ func GetDirection(currentFloor int, currentOrder int) int{
 
 func GetNewOrder() Order{ //returnerer en ordre med floor: -1 om det ikke er noen ordre.
 	newOrder := Order{}
+	if IsThereOrder(currentFloor,0,elevatorID){
+		newOrder.Floor = currentFloor
+		newOrder.ButtonType = 0
+		return newOrder
+	}else if IsThereOrder(currentFloor,1,elevatorID){
+		newOrder.Floor = currentFloor
+		newOrder.ButtonType = 1
+		return newOrder
+	}
+
 	for i := 0; i < config.NUM_FLOORS; i++{
 		if IsThereOrder(i, 2, elevatorID){
 			//det finnes en cab order
@@ -202,6 +214,57 @@ func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres 
 	}
 }
 
-func MergeQueues(){
+
+func MergeHallQueues(elev2 config.Packet){
+
+	for i := 0; i < config.NUM_FLOORS; i++{
 	
+		for j := 0; j < config.NUM_HALLBUTTONS; j++{
+			if i != 0 && j == 1{ //hvis det ikke er 1 etasje eller 4 etasje.
+				hallOrderQueue[i][j] = PrioritizeNumbers(elev2, i, j)
+			}
+			if i != config.NUM_FLOORS && j == 0{
+				hallOrderQueue[i][j] = PrioritizeNumbers(elev2, i, j)
+			}
+		}
+	}
 }
+
+func PrioritizeNumbers(elev2 config.Packet, i int, j int) int{
+	order1 := hallOrderQueue[i][j]
+	order2 := elev2.Order_list[i][j]
+
+	if order1 == order2{
+		return order1
+	}
+	if (order1 == -1 && currentFloor==i && currentState == 2) || (order2 == -1 && elev2.CurrentFloor==i && elev2.State == 2){
+		return -1
+	}
+
+	if order1 == elevatorID {
+		return order1
+	}else if order2 == elev2.ID{
+		return order2
+	}
+	return 0
+}
+
+func PrintHallOrderQueue(hallOrderQueue [config.NUM_FLOORS][config.NUM_HALLBUTTONS]int){
+	for i := 0; i < config.NUM_FLOORS; i++{
+		fmt.Print(i+1," etasje: \t")
+		for j := 0; j < config.NUM_HALLBUTTONS; j++{
+			if i != 0 && j == 1{ //hvis det ikke er 1 etasje eller 4 etasje.
+				fmt.Print(hallOrderQueue[i][j], "\t")
+			}
+			if i != config.NUM_FLOORS && j == 0{
+				fmt.Print(hallOrderQueue[i][j], "\t")
+			}
+		}
+		fmt.Print("\n")
+	}
+	fmt.Print("\n")
+}
+
+
+
+

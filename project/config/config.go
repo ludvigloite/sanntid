@@ -26,20 +26,27 @@ const(
 	BROADCAST_PORT		= 12347//16732 //ENDRES
 	BROADCAST_INTERVAL 	= 200 * time.Millisecond
 
+)
 
+type ElevState int
+const(
+	Idle = 0
+	Active = 1
+	Lost = 2
 )
 
 type Packet struct {
-	Message 			string
-	Iter    			int
 	ID                	int
 	Timestamp         	int
 	Error_id          	int
-	State             	int
+	State             	int //0:Idle, 1: Active, 2: Door_open, 3: UNDEFINED
 	Current_order     	int
 	Message_nr        	int
 	Order_list        	[NUM_FLOORS][NUM_HALLBUTTONS] int
 	Confirmed_orders  	[3][4]int
+	Rank 				int //bytter underveis
+	CurrentFloor 		int //hvilken etasje er heisen i nå. 0 , 1 , 2 , 3
+	CurrentDir 			int //hvilken retning har heisen. -1 , 0 , 1. Kun 0 i spesielle tilfeller. Er -1 / 1 også når den stopper i et floor. Den skal jo tross alt videre i samme retning.
 }
 
 type FSMChannels struct {

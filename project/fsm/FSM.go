@@ -17,6 +17,8 @@ const(
 
 func RunElevator(ch config.FSMChannels){
 	state := IDLE
+	orderhandler.SetCurrentState(0)
+
 
 	///////////////////////////////////
 	//	ch.Drv_buttons
@@ -56,6 +58,7 @@ func RunElevator(ch config.FSMChannels){
 
 				elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))
 				state = ACTIVE
+				orderhandler.SetCurrentState(1)
 			}
 
 		case ACTIVE:
@@ -74,6 +77,7 @@ func RunElevator(ch config.FSMChannels){
 
 					elevio.SetMotorDirection(elevio.MD_Stop)//
 					state = DOOR_OPEN
+					orderhandler.SetCurrentState(2)
 					//orderhandler.UpdateLights()
 				}
 
@@ -88,6 +92,7 @@ func RunElevator(ch config.FSMChannels){
 
 					elevio.SetMotorDirection(elevio.MD_Stop)//
 					state = DOOR_OPEN
+					orderhandler.SetCurrentState(2)
 					//orderhandler.UpdateLights()
 				}
 
@@ -111,10 +116,12 @@ func RunElevator(ch config.FSMChannels){
 					orderhandler.SetCurrentOrder(-1)
 
 					state = IDLE
+					orderhandler.SetCurrentState(0)
 				}else{
 					elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))
 
 					state = ACTIVE
+					orderhandler.SetCurrentState(1)
 				}
 			//orderhandler.UpdateLights()
 
