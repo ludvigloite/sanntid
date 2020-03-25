@@ -220,6 +220,7 @@ func LightUpdater(LightUpdateCh <-chan bool){
 	}
 }
 
+/*
 func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres mer effektiv. NumHallButtons er jo bare 2..Evt lage en funskjon for hall-lights og en for cab-lights
 	for i := 0; i < config.NUM_FLOORS; i++{
 		if cabOrderQueue.Active[i] ==-1 {
@@ -246,6 +247,7 @@ func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres 
 		}
 	}
 }
+*/
 
 
 func MergeHallQueues(elev2 config.Packet){

@@ -35,8 +35,17 @@ const(
 	Lost = 2
 )
 
+type Order struct{
+	Floor int
+	ButtonType int
+	Type_action int //-1 hvis ordre skal slettes, 1 hvis ordre blir lagt til.
+	Packet_id int
+	Approved bool
+}
+
 type Packet struct {
 	ID                	int
+	New_order 			Order
 	Timestamp         	int
 	Error_id          	int
 	State             	int //0:Idle, 1: Active, 2: Door_open, 3: UNDEFINED

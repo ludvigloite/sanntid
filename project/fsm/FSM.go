@@ -111,7 +111,9 @@ func RunElevator(ch config.FSMChannels){
 				elevio.SetDoorOpenLamp(false) //slår av lys
 				
 				orderhandler.ClearFloor(orderhandler.GetCurrentFloor()) //
-				orderhandler.UpdateLights() //
+				//orderhandler.UpdateLights() //
+				ch.LightUpdateCh <- true
+
 
 				//orderhandler.UpdateLights()
 

@@ -6,6 +6,7 @@ import(
 	"../config"
 	"fmt"
 	"time"
+	"math/rand"
 )
 
 
@@ -18,14 +19,62 @@ func Initialize(elevID int, localhost string){
     //Wipe alle ordre til nå??
 }
 
-func CheckAndAddOrder(ch config.FSMChannels){
+func CheckAndAddOrder(fsmCh config.FSMChannels, netCh config.NetworkChannels){
+	//KJØRES SOM GOROUNTINE
+	order := config.Order{}
+	Msg := config.Packet{}
 	for{
 		select{
-			case order := <- ch.Drv_buttons: //Fått inn knappetrykk
-				fmt.Println("Knapp er trykket ", int(order.Button), order.Floor)
-				orderhandler.AddOrder(order.Floor, int(order.Button),0) //0 fordi det bare skal legges til ordre. Ingen har tatt den enda.
-				//orderhandler.UpdateLights()
-				ch.LightUpdateCh <- true
+			case buttonpress := <- fsmCh.Drv_buttons: //Fått inn knappetrykk
+				fmt.Println("Knapp er trykket ", int(buttonpress.Button), buttonpress.Floor)
+				//orderhandler.AddOrder(buttonpress.Floor, int(buttonpress.Button),0) //0 fordi det bare skal legges til ordre. Ingen har tatt den enda.
+
+				Msg.Order_list = orderhandler.GetHallOrderQueue()
+				Msg.ID = orderhandler.GetElevID()
+				Msg.CurrentFloor = orderhandler.GetCurrentFloor()
+				Msg.State = orderhandler.GetCurrentState()
+
+				order.Floor = buttonpress.Floor
+				order.ButtonType = int(buttonpress.Button)
+				order.Packet_id = rand.Intn(10000)
+				order.Type_action = 1 //Det er en ordre som skal legges til
+				order.Approved = false
+
+				Msg.New_order = order
+
+				if orderhandler.IsMaster(){
+					netCh.TransmitterCh <- Msg
+				}else{ //en slave har fått inn en ordre
+					netCh.TransmitterCh <- Msg
+				}
+
+
+			case received_order := <- netCh.ReceiverCh:
+
+				if received_order.ID == orderhandler.GetElevID() || (received_order.ID!=1 && orderhandler.GetElevID()!=1){		//hvis det er fra deg selv eller du er slave og pakken er fra slave: IGNORE!
+				break //litt usikker på hvordan break funker
+				}
+
+				if received_order.New_order.Approved{
+					//legg til i ordrekø! evt fjern fra ordrekø!
+					if received_order.New_order.Type_action == 1{
+						orderhandler.AddOrder(received_order.New_order.Floor, received_order.New_order.ButtonType, 0) //elevatorID er 0 om det bare skal legges inn ordre uten at noen tar den.)
+					}else{
+						orderhandler.AddOrder(received_order.New_order.Floor, received_order.New_order.ButtonType, -1)
+					}
+					fsmCh.LightUpdateCh <- true //hvis ordrekø er endret oppdateres lysene.
+					break
+				}
+
+				if orderhandler.IsMaster(){
+					netCh.TransmitterCh <- received_order
+
+				}else{ //er slave
+					received_order.New_order.Approved = true
+					netCh.TransmitterCh <- received_order
+
+				}
+
 		}
 	}
 }
@@ -46,7 +95,7 @@ func InitializeLights(numFloors int){ //NB: Endra her navn til numHallButtons
 
 }
 
-func TestReceiver(ch config.NetworkChannels){
+func TestReceiver(ch config.NetworkChannels, LightUpdateCh chan <- bool){
 	fmt.Println("Har kommet inn i TestReceiver")
 	for {
 		select {
@@ -71,9 +120,10 @@ func TestReceiver(ch config.NetworkChannels){
 				orderhandler.SetHallOrderQueue(packet.Order_list)
 			}
 			
-			orderhandler.UpdateLights()
+			//orderhandler.UpdateLights()
+			LightUpdateCh <- true
 
-			//UPDATE BARE LIGHTS OM DET ER EN ENDRING. 
+			//UPDATE BARE LIGHTS OM DET ER EN ENDRING. GJØR DETTE INNI DE FORSKJELLIGE FUNKSJONENE
 
 		}
 	}

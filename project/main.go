@@ -13,6 +13,8 @@ import(
     "strconv"
     "fmt"
     "flag"
+    "math/rand"
+    "time"
 )
 
 ////////////////////////////////////////////
@@ -38,6 +40,8 @@ func main(){
     fmt.Println("Elevator ID: ", *elevIDPtr, " ,  Port Number: ", *portPtr)
     elevID := *elevIDPtr
     port := *portPtr
+
+    rand.Seed(time.Now().UnixNano()) //genererer seed til randomizer.
 
     elevcontroller.Initialize(elevID, "localhost:"+port)
 
@@ -66,11 +70,11 @@ func main(){
     go elevio.PollButtons(fsmChannels.Drv_buttons)
     go elevio.PollFloorSensor(fsmChannels.Drv_floors)
     go timer.DoorTimer(fsmChannels.Close_door,fsmChannels.Open_door,config.DOOR_OPEN_TIME) //Legg true på open_door når dør skal åpnes //skrives true til close_door når tiden er ute
-    go elevcontroller.CheckAndAddOrder(fsmChannels)
+    go elevcontroller.CheckAndAddOrder(fsmChannels,networkChannels)
     go orderhandler.LightUpdater(fsmChannels.LightUpdateCh)
 
     go elevcontroller.SendMsg(networkChannels.TransmitterCh)
-    go elevcontroller.TestReceiver(networkChannels)
+    go elevcontroller.TestReceiver(networkChannels, fsmChannels.LightUpdateCh)
 
     fsm.RunElevator(fsmChannels) //kjøre som go?
 }
