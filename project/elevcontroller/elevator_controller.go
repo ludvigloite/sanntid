@@ -61,9 +61,11 @@ func TestReceiver(ch config.NetworkChannels){
 			//orderhandler.PrintHallOrderQueue(a.Order_list)
 			if orderhandler.IsMaster(){ //Du selv er Master
 				orderhandler.MergeHallQueues(a)
+
 			} else if a.ID ==1 { //du mottar fra Master
 				orderhandler.SetHallOrderQueue(a.Order_list)
 			}
+			
 			orderhandler.UpdateLights()
 
 		}

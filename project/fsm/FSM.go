@@ -39,7 +39,7 @@ func RunElevator(ch config.FSMChannels){
 	orderhandler.SetCurrentFloor(a)
 	orderhandler.SetCurrentDir(0)
 	elevio.SetFloorIndicator(a)
-	fmt.Println("Heisen er intialisert og venter i etasje nr ", a+1)
+	fmt.Println("Heisen er intialisert og venter i etasje nr ", a)
 	/*		INIT FERDIG		*/
 	
 
@@ -83,7 +83,7 @@ func RunElevator(ch config.FSMChannels){
 
 			default:
 				if orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()) == 0{
-					fmt.Println("stopping at floor")
+					fmt.Println("stopping at floor in ACTIVE")
 
 					elevio.SetDoorOpenLamp(true)
 					//orderhandler.ClearFloor(orderhandler.GetCurrentFloor())
