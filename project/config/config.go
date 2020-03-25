@@ -54,6 +54,7 @@ type FSMChannels struct {
     Drv_floors  		chan int
     Open_door			chan bool
     Close_door			chan bool
+    LightUpdateCh		chan bool
 }
 
 type NetworkChannels struct{

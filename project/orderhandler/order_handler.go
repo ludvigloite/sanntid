@@ -142,7 +142,7 @@ func AddOrder(floor int, buttonType int, elevatorID int){ //elevatorID er 0 om d
 	} else{
 		hallOrderQueue[floor][buttonType] = elevatorID //active
 	}
-	UpdateLights()
+	//UpdateLights()
 }
 
 
@@ -185,6 +185,39 @@ func ClearFloor(floor int){ //fjerner alle ordre i denne etasjen fra køene. Kan
 	hallOrderQueue[floor][0] = -1
 	hallOrderQueue[floor][1] = -1
 	cabOrderQueue.Active[floor] = -1
+}
+
+func LightUpdater(LightUpdateCh <-chan bool){
+	for{
+		select{
+		case <-LightUpdateCh:
+			fmt.Println("Updating Lights...")
+			for i := 0; i < config.NUM_FLOORS; i++{
+				if cabOrderQueue.Active[i] ==-1 {
+					elevio.SetButtonLamp(elevio.BT_Cab, i, false)
+				} else{
+					elevio.SetButtonLamp(elevio.BT_Cab, i, true)
+				}
+
+				for j := 0; j < config.NUM_HALLBUTTONS; j++{
+					if i != 0 && j == 1{ //hvis det ikke er 1 etasje eller 4 etasje.
+						if hallOrderQueue[i][j] == -1{
+							elevio.SetButtonLamp(elevio.BT_HallDown, i, false)
+						} else{
+							elevio.SetButtonLamp(elevio.BT_HallDown, i, true)
+						}
+					}
+					if i != config.NUM_FLOORS && j == 0{
+						if hallOrderQueue[i][j] == -1{
+							elevio.SetButtonLamp(elevio.BT_HallUp, i, false)
+						} else{
+							elevio.SetButtonLamp(elevio.BT_HallUp, i, true)
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres mer effektiv. NumHallButtons er jo bare 2..Evt lage en funskjon for hall-lights og en for cab-lights
