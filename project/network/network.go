@@ -1,40 +1,68 @@
 package network
 
 import (
-  "net"
-  "../setup"
+  
 )
-func UDPInit(localPort, bcastPort string){
 
-  //Setting up broadcast address
-  bcastAddr, err = ResolveUDPAddr("udp", broadcastAddr + bcastPort)
-  if err != nil{
-    return err
+func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels){
+  //KJØRES SOM GOROUNTINE
+  order := config.Order{}
+  Msg := config.Packet{}
+  for{
+    select{
+      case buttonpress := <- fsmCh.Drv_buttons: //Fått inn knappetrykk
+        fmt.Println("Knapp er trykket! ", int(buttonpress.Button), buttonpress.Floor)
+
+        //Vil sende dette knappetrykket ut!!
+        
+        Msg.Elev_ID = orderhandler.GetElevID()
+        Msg.Elev_rank = orderhandler.GetElevRank()
+
+        order.Floor = buttonpress.Floor
+        order.ButtonType = int(buttonpress.Button)
+        order.Packet_id = rand.Intn(10000)
+        order.Type_action = 1 //Det er en ordre som skal legges til
+        order.Approved = false
+
+        Msg.New_order = order
+
+        netCh.TransmittOrderCh <- Msg
+        fmt.Println("Har nå sendt avgårde pakke om at knapp er trykket!")
+
+      case newState := <-fsmCh.New_state: //her må det opprettes ny intern channel. denne skal skrives Elevator til når det er en ny endring. Denne skal også sendes med en gang en heis går online.
+        //newState er en Elevator Struct.
+        /*
+        type Elevator struct{
+          ElevID int
+          ElevRank int
+          CurrentOrder Order
+           CurrentFloor int
+          CurrentState int
+        }*/
+
+        netCh.TransmittElevStateCh <- newState
+
+      case newCurrentOrder := <- fsmCh.New_current_order
+        //newCurrentOrder er en Order struct:
+        /*
+          type Order struct{
+            Floor int
+            ButtonType int
+            Type_action int //-1 hvis ordre skal slettes, 1 hvis ordre blir lagt til.
+            Packet_id int
+            Approved bool
+            Receiver_elev int
+            }
+        */
+        netCh.TransmittCurrentOrderCh <- newCurrentOrder
+
+
+    }
   }
+}
 
-  //Setting up broadcast listening conn
-  bcastListenConn, err = net.ListenUDP("udp",bcastAddr)
-  if err != nil{
-    return err
-  }
 
-  //Setting up local address
-  localConn, err := net.DialUDP("udp4", nil, bcastAddr)
-  if err != nil{
-    return err
-  }
 
-  localAddr, err := net.ResolveUDPAddr("udp", (localConn.LocalAddr()).String())
-  localAddr.Port() = localPort
-  defer localConn
+func Receiver(){
 
-  if err != nil{
-    return err
-  }
-
-  //Setting up local listening conn
-  bcastListenConn, err := net.ListenUDP("udp",localAddr)
-  if err != nil{
-    return err
-  }
 }
