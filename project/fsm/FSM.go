@@ -7,16 +7,10 @@ import(
 	"../config"
 )
 
-const(
-	IDLE = "IDLE"
-	ACTIVE = "ACTIVE"
-	DOOR_OPEN = "DOOR_OPEN"
-	UNDEFINED = "UNDEFINED"
-)
 
 
-func RunElevator(ch config.FSMChannels){
-	state := IDLE
+func RunElevator(ch config.FSMChannels, elevID int, elevatorList *[config.NUM_ELEVATORS] config.Elevator){
+	state := config.IDLE
 	orderhandler.SetCurrentState(0)
 
 
@@ -41,28 +35,48 @@ func RunElevator(ch config.FSMChannels){
 	elevio.SetFloorIndicator(a)
 	fmt.Println("Heisen er intialisert og venter i etasje nr ", a)
 	/*		INIT FERDIG		*/
-	
 
+	//INITIALISER ELEV I ELEVATOR_LIST!!
+	elevator = config.Elevator{
+		ElevID: elevID,
+		ElevRank: 3,
+		CurrentOrder: config.Order{Floor:-1, ButtonType:-1},
+		CurrentFloor: a,
+		CurrentState: config.IDLE,
+	}
+	elevatorList[id] = elevator
+	
+	stateIsChanged := true
 
 	for{
-		//orderhandler.UpdateLights()
+		
 
 		switch state{
-		case IDLE: //heis er IDLE. Skal ikke gjøre noe med mindre den får knappetrykk eller får inn en ordre som skal utføres
-			//newOrder := orderhandler.GetNewOrder()
-			destination := orderhandler.GetCurrentOrderList()[orderhandler.GetElevID()-1]
+		case config.IDLE: //heis er IDLE. Skal ikke gjøre noe med mindre den får knappetrykk eller får inn en ordre som skal utføres
+			
+			elevator := orderhandler.GetElevList()[orderhandler.GetElevID()-1]
+			destination := elevator.CurrentOrder
 			if destination.Floor != -1{
 				fmt.Println("Jeg har fått en oppgave! Denne skal jeg utføre")
 				//orderhandler.AddOrder(newOrder.Floor, newOrder.ButtonType, orderhandler.GetElevID())
-				orderhandler.SetCurrentOrder(destination.Floor)
+				elevator.CurrentOrder = destination
+				//orderhandler.SetCurrentOrder(destination.Floor)
+
+				HER JOBBER JEG NÅ!!! prøver å kutte ut alle lokale variable for currentFloor osv!!
+
 				orderhandler.SetCurrentDir(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()))
 
 				elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))
-				state = ACTIVE
+				state = config.ACTIVE
+				stateIsChanged = true
+
 				orderhandler.SetCurrentState(1)
 			}
+			if stateIsChanged{
+				go func(){ch.New_state <- }
+			}
 
-		case ACTIVE:
+		case config.ACTIVE:
 			//orderhandler.UpdateLights()
 			select{
 			case reachedFloor := <- ch.Drv_floors:
@@ -77,7 +91,7 @@ func RunElevator(ch config.FSMChannels){
 					ch.Open_door <- true
 
 					elevio.SetMotorDirection(elevio.MD_Stop)//
-					state = DOOR_OPEN
+					state = config.DOOR_OPEN
 					orderhandler.SetCurrentState(2)
 					//orderhandler.UpdateLights()
 				}
@@ -92,7 +106,7 @@ func RunElevator(ch config.FSMChannels){
 					ch.Open_door <- true
 
 					elevio.SetMotorDirection(elevio.MD_Stop)//
-					state = DOOR_OPEN
+					state = config.DOOR_OPEN
 					orderhandler.SetCurrentState(2)
 					//orderhandler.UpdateLights()
 				}
@@ -102,7 +116,7 @@ func RunElevator(ch config.FSMChannels){
 
 
 
-		case DOOR_OPEN:
+		case config.DOOR_OPEN:
 			//elevio.SetMotorDirection(elevio.MD_Stop)
 
 			select{
@@ -122,12 +136,12 @@ func RunElevator(ch config.FSMChannels){
 					//kommet frem til enden.
 					orderhandler.SetCurrentOrder(-1)
 
-					state = IDLE
+					state = config.IDLE
 					orderhandler.SetCurrentState(0)
 				}else{
 					elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))
 
-					state = ACTIVE
+					state = config.ACTIVE
 					orderhandler.SetCurrentState(1)
 				}
 			//orderhandler.UpdateLights()
@@ -140,7 +154,7 @@ func RunElevator(ch config.FSMChannels){
 
 
 
-		case UNDEFINED: //??
+		case config.UNDEFINED: //??
 			//
 
 

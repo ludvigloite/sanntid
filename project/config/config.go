@@ -23,10 +23,19 @@ const(
 )
 
 const(
-	SERVER_PORT 		= 12346//15647//15371 //ENDRES
-	BROADCAST_PORT		= 12347//16732 //ENDRES
-	BROADCAST_INTERVAL 	= 200 * time.Millisecond
+	SERVER_PORT 				= 12346//15647//15371 //ENDRES
+	BROADCAST_ORDER_PORT		= 12347//16732 //ENDRES
+	BROADCAST_CURRENT_ORDER_PORT= 12348
+	BROADCAST_ELEV_STATE_PORT	= 12349
+	BROADCAST_INTERVAL 			= 200 * time.Millisecond
 
+)
+
+const(
+	IDLE = "IDLE"
+	ACTIVE = "ACTIVE"
+	DOOR_OPEN = "DOOR_OPEN"
+	UNDEFINED = "UNDEFINED"
 )
 
 type ElevState int
@@ -36,12 +45,19 @@ const(
 	Lost = 2
 )
 
+type Type_Action int
+const{
+	ADD = 1
+	REMOVE = -1
+}
+
 type Order struct{
-	Floor int
-	ButtonType int
-	Type_action int //-1 hvis ordre skal slettes, 1 hvis ordre blir lagt til.
-	Packet_id int
-	Approved bool
+	Floor 			int
+	ButtonType 		int
+	Type_action 	int //-1 hvis ordre skal slettes, 1 hvis ordre blir lagt til.
+	Packet_id 		int
+	Approved 		bool
+	Receiver_elev 	int
 }
 
 type Elevator struct{
@@ -75,11 +91,17 @@ type FSMChannels struct {
     Open_door			chan bool
     Close_door			chan bool
     LightUpdateCh		chan bool
+    New_state			chan Elevator
+    New_current_order 	chan Order
 }
 
 type NetworkChannels struct{
-	PeerUpdateCh 		chan peers.PeerUpdate
-	PeerTxEnable 		chan bool
-	TransmitterCh 		chan Packet
-	ReceiverCh 			chan Packet
+	PeerUpdateCh 			chan peers.PeerUpdate
+	PeerTxEnable 			chan bool
+	TransmittOrderCh 		chan Packet
+	ReceiveOrderCh 			chan Packet
+	TransmittElevStateCh 	chan Elevator
+	ReceiveElevStateCh 		chan Elevator
+	TransmittCurrentOrderCh	chan Order
+	ReceiveCurrentOrderCh	chan Order
 }

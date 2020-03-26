@@ -45,26 +45,40 @@ func main(){
 
     elevcontroller.Initialize(elevID, "localhost:"+port)
 
+    var elevatorList = &[config.NUM_ELEVATORS] config.Elevator{}
+
     fsmChannels := config.FSMChannels{
         Drv_buttons: make(chan elevio.ButtonEvent), 
         Drv_floors: make(chan int),  
         Open_door: make(chan bool), 
         Close_door: make(chan bool),
         LightUpdateCh: make(chan bool),
+        New_state: make(chan config.Elevator),
+        New_current_order: make(chan config.Order),
     }
 
     networkChannels := config.NetworkChannels{
         PeerUpdateCh : make(chan peers.PeerUpdate),
         PeerTxEnable : make(chan bool),
-        TransmitterCh : make(chan config.Packet),
-        ReceiverCh : make(chan config.Packet),
+        TransmittOrderCh: make(chan config.Packet),
+        ReceiveOrderCh: make(chan config.Packet),
+        TransmittElevStateCh: make(chan config.Elevator),
+        ReceiveElevStateCh: make(chan config.Elevator),
+        TransmittCurrentOrderCh: make(chan config.Order),
+        ReceiveCurrentOrderCh: make(chan config.Order),
     }
 
     go peers.Transmitter(config.SERVER_PORT, strconv.Itoa(elevID), networkChannels.PeerTxEnable)
     go peers.Receiver(config.SERVER_PORT, networkChannels.PeerUpdateCh)
 
-    go bcast.Transmitter(config.BROADCAST_PORT, networkChannels.TransmitterCh)
-    go bcast.Receiver(config.BROADCAST_PORT, networkChannels.ReceiverCh)
+    go bcast.Transmitter(config.BROADCAST_ORDER_PORT, networkChannels.TransmittOrderCh)
+    go bcast.Receiver(config.BROADCAST_ORDER_PORT, networkChannels.ReceiveOrderCh)
+
+    go bcast.Transmitter(config.BROADCAST_ELEV_STATE_PORT, networkChannels.TransmittElevStateCh)
+    go bcast.Receiver(config.BROADCAST_ELEV_STATE_PORT, networkChannels.ReceiveElevStateCh)
+
+    go bcast.Transmitter(config.BROADCAST_ORDER_PORT, networkChannels.TransmittCurrentOrderCh)
+    go bcast.Receiver(config.BROADCAST_ORDER_PORT, networkChannels.ReceiveCurrentOrderCh)
 
 
     go elevio.PollButtons(fsmChannels.Drv_buttons)
@@ -77,5 +91,5 @@ func main(){
     go elevcontroller.TestReceiver(networkChannels)
     go elevcontroller.Arbitrator(networkChannels)
 
-    fsm.RunElevator(fsmChannels) //kjøre som go?
+    fsm.RunElevator(fsmChannels, elevID, elevatorList) //kjøre som go?
 }
