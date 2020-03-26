@@ -44,8 +44,17 @@ type Order struct{
 	Approved bool
 }
 
+type Elevator struct{
+	ElevID int
+	ElevRank int
+	CurrentOrder Order
+	CurrentFloor int
+	CurrentState int
+}
+
 type Packet struct {
-	ID                			int
+	Elev_ID                		int
+	Elev_rank 					int
 	New_order 					Order
 	New_current_order_to_who 	int
 	Timestamp         			int

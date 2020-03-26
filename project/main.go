@@ -75,6 +75,7 @@ func main(){
 
     //go elevcontroller.SendMsg(networkChannels.TransmitterCh)
     go elevcontroller.TestReceiver(networkChannels)
+    go elevcontroller.Arbitrator(networkChannels)
 
     fsm.RunElevator(fsmChannels) //kjøre som go?
 }

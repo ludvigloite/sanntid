@@ -54,7 +54,7 @@ func RunElevator(ch config.FSMChannels){
 			if destination.Floor != -1{
 				fmt.Println("Jeg har fått en oppgave! Denne skal jeg utføre")
 				//orderhandler.AddOrder(newOrder.Floor, newOrder.ButtonType, orderhandler.GetElevID())
-				//orderhandler.SetCurrentOrder(newOrder.Floor)
+				orderhandler.SetCurrentOrder(destination.Floor)
 				orderhandler.SetCurrentDir(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()))
 
 				elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))

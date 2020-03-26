@@ -34,15 +34,29 @@ type CabOrders struct{
 	ElevID int //hvilken elevator cab callsa tilhører
 	Active [config.NUM_FLOORS]int //hvilke av de fire knappene som er aktive // !!!! -1:inaktiv, 0:aktiv 2:executing?
 }
+/*
 type Order struct{
 	Floor int
 	ButtonType int
-}
+}*/
 
 var cabOrderQueue = &CabOrders{}//variabelen som kan endres på
 
-var currentOrderList = &[config.NUM_ELEVATORS] Order{}
+var elevatorList = &[config.NUM_ELEVATORS] config.Elevator{}
+
+/* LIGGER I CONFIG
+type Elevator struct{
+	ElevID int
+	ElevRank int
+	CurrentOrder Order
+	CurrentFloor int
+	CurrentState int
+}
+*/
+
+var currentOrderList = &[config.NUM_ELEVATORS] config.Order{}
 var currentFloorList = &[config.NUM_ELEVATORS] int{}
+
 
 func IsMaster()bool{
 	if elevatorRank == 1{
@@ -51,12 +65,30 @@ func IsMaster()bool{
 	return false
 }
 
-func UpdateCurrentOrderList(elevID int, current_order Order){ //evt bytte ut int med en Ordre? Tror egt vi bare trenger FloorNr, men er kanskje mer leselig om man tar med hele order.
-	*currentOrderList[elevID] = current_order
+
+func AddNewCurrentOrder(elevID int, current_order config.Order){ //evt bytte ut int med en Ordre? Tror egt vi bare trenger FloorNr, men er kanskje mer leselig om man tar med hele order.
+	elevList := *elevatorList
+	if elevList[elevID-1].ElevID == elevID{
+		elevList[elevID-1].CurrentOrder = current_order
+		*elevatorList = elevList
+
+	}else{
+		fmt.Println("NOE ER FEIL I AddNewCurrentOrder()")
+	}
 }
-func UpdateCurrentFloorList(elevID int, current_floor int){ //evt bytte ut int med en Ordre? Tror egt vi bare trenger FloorNr, men er kanskje mer leselig om man tar med hele order.
-	*currentOrderList[elevID] = current_floor
+
+func UpdateCurrentFloor(elevID int, current_floor int){
+	elevList := *elevatorList
+	if elevList[elevID-1].ElevID == elevID{
+		elevList[elevID-1].CurrentFloor = current_floor
+		*elevatorList = elevList
+
+	}else{
+		fmt.Println("NOE ER FEIL I UpdateCurrentFloor()")
+	}
 }
+
+
 
 
 func SetElevatorRank(rank int){elevatorRank = rank}
@@ -74,8 +106,9 @@ func GetElevID()int {return elevatorID}
 func GetElevRank()int {return elevatorRank}
 func GetHallOrderQueue()[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int{return *hallOrderQueue}
 func GetCurrentState()int{return currentState}
-func GetCurrentOrderList()[config.NUM_ELEVATORS] Order{return *currentOrderList}
+func GetCurrentOrderList()[config.NUM_ELEVATORS] config.Order{return *currentOrderList}
 func GetCurrentFloorList()[config.NUM_ELEVATORS] int{return *currentFloorList}
+func GetElevList() [config.NUM_ELEVATORS] config.Elevator{return *elevatorList}
 
 
 
@@ -83,8 +116,23 @@ func GetCurrentFloorList()[config.NUM_ELEVATORS] int{return *currentFloorList}
 func InitQueues(){
 	InitCabQueue(cabOrderQueue)
 	InitHallQueue(hallOrderQueue)
-	InitCurrentOrderList(currentOrderList)
+	//InitCurrentOrderFloorLists(currentOrderList,currentFloorList)
 }
+
+/*
+func InitElevList(elevList *[config.NUM_ELEVATORS] Elevator){ //Trenger kanskje ikke initialisere?
+	elevator = config.Elevator{}
+	for i := 0; i < config.NUM_ELEVATORS; i++{
+	
+	ElevID int
+	ElevRank int
+	CurrentOrder Order
+	CurrentFloor int
+	CurrentState int
+	
+	}
+}*/
+
 
 func InitHallQueue(queue *[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int){
 	for i := 0; i < config.NUM_FLOORS; i++{
@@ -102,10 +150,11 @@ func InitCabQueue(queue *CabOrders){
 	}
 }
 
-func InitCurrentOrderList(list *[config.NUM_ELEVATORS]int){
+func InitCurrentOrderFloorLists(orderList *[config.NUM_ELEVATORS] config.Order, floorList *[config.NUM_ELEVATORS]int){
 	for i:=0;i<config.NUM_ELEVATORS;i++{
-		list[i].Floor = -1
-		list[i].ButtonType = -1
+		orderList[i].Floor = -1
+		orderList[i].ButtonType = -1
+		floorList[i] = -1
 	}
 }
 
@@ -124,8 +173,13 @@ func GetDirection(currentFloor int, currentOrder int) int{
 
 
 
-func GetNewOrder(elevCurrentFloor int, elevID int) Order{ //returnerer en ordre med floor: -1 om det ikke er noen ordre.
-	newOrder := Order{}
+func GetNewOrder(elevCurrentFloor int, elevID int) config.Order{ //returnerer en ordre med floor: -1 om det ikke er noen ordre.
+	newOrder := config.Order{}
+	if elevCurrentFloor == -1{
+		newOrder.Floor = -1
+		newOrder.ButtonType = -1
+		return newOrder
+	}
 	if IsThereOrder(elevCurrentFloor,0,elevID){
 		newOrder.Floor = elevCurrentFloor
 		newOrder.ButtonType = 0
@@ -299,7 +353,7 @@ func PrioritizeNumbers(elev2 config.Packet, i int, j int) int{
 
 	if order1 == elevatorID {
 		return order1
-	}else if order2 == elev2.ID{
+	}else if order2 == elev2.Elev_ID{
 		return order2
 	}
 	return 0

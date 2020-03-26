@@ -25,19 +25,19 @@ func CheckAndAddOrder(fsmCh config.FSMChannels, netCh config.NetworkChannels){
 	//KJØRES SOM GOROUNTINE
 	order := config.Order{}
 	Msg := config.Packet{}
-	i := 0
 	for{
 		select{
 			case buttonpress := <- fsmCh.Drv_buttons: //Fått inn knappetrykk
-				fmt.Println("Knapp er trykket ", int(buttonpress.Button), buttonpress.Floor)
+				fmt.Println("Knapp er trykket! ", int(buttonpress.Button), buttonpress.Floor)
 				//orderhandler.AddOrder(buttonpress.Floor, int(buttonpress.Button),0) //0 fordi det bare skal legges til ordre. Ingen har tatt den enda.
 
 				//Msg.Order_list = orderhandler.GetHallOrderQueue()
-				Msg.ID = orderhandler.GetElevID()
+				Msg.Elev_ID = orderhandler.GetElevID()
+				Msg.Elev_rank = orderhandler.GetElevRank()
 				Msg.CurrentFloor = orderhandler.GetCurrentFloor()
 				//Msg.CurrentOrder = orderhandler.GetCurrentOrder()
 				//Msg.State = orderhandler.GetCurrentState()
-				Msg.Is_new_current_order = false
+				Msg.New_current_order_to_who = -1
 
 				order.Floor = buttonpress.Floor
 				order.ButtonType = int(buttonpress.Button)
@@ -52,35 +52,34 @@ func CheckAndAddOrder(fsmCh config.FSMChannels, netCh config.NetworkChannels){
 				}else{ //en slave har fått inn en ordre
 					netCh.TransmitterCh <- Msg
 				}
+				fmt.Println("Har nå sendt avgårde pakke om at knapp er trykket!")
 
 
 			case received_order := <- netCh.ReceiverCh:
 
-				if received_order.ID == orderhandler.GetElevID() || (received_order.ID!=1 && orderhandler.GetElevID()!=1){		//hvis det er fra deg selv eller du er slave og pakken er fra slave: IGNORE!
+				if received_order.Elev_ID == orderhandler.GetElevID() || (received_order.Elev_rank!=1 && orderhandler.GetElevRank()!=1){		//hvis det er fra deg selv eller du er slave og pakken er fra slave: IGNORE!
 					break //Drit i ordre fra deg selv
 				}
 				MsgOrder := received_order.New_order
 
 
 
-				if received_order.New_current_order_to_who == orderhandler.GetElevID{ //Heisen har fått en ny current order fra Master.
-					//orderhandler.AddOrder(MsgOrder.Floor, MsgOrder.ButtonType, orderhandler.GetElevID())
+				if received_order.New_current_order_to_who == orderhandler.GetElevID(){ //Heisen har fått en ny current order fra Master.
 					orderhandler.SetCurrentOrder(MsgOrder.Floor)
-					//orderhandler.SetCurrentDir(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()))
-
+					fmt.Println("Jeg har fått beskjed av Master om å utføre ordre i etasje ", MsgOrder.Floor)
 					break
 				}
 
-				orderhandler.UpdateCurrentFloorList(received_order.ID, received_order.CurrentFloor)
+				orderhandler.UpdateCurrentFloor(received_order.Elev_ID, received_order.CurrentFloor)
 
 				if MsgOrder.Type_action == -1 && orderhandler.IsMaster() && !MsgOrder.Approved{ //Master må eventuelt fjerne currentOrder for heisen som sender inn slettet ordre.
-					if MsgOrder.Floor == orderhandler.GetCurrentOrderList()[received_order.ID].Floor{
+					if MsgOrder.Floor == orderhandler.GetElevList()[received_order.Elev_ID-1].CurrentOrder.Floor{
 						//heisen har nettopp utført sin currentOrder
-						deletedOrder := orderhandler.Order{}
+						deletedOrder := config.Order{}
 						deletedOrder.Floor = -1
 						deletedOrder.ButtonType = -1
 
-						orderhandler.UpdateCurrentOrderList(received_order.ID,deletedOrder) //sletter heisens currentOrder
+						orderhandler.AddNewCurrentOrder(received_order.Elev_ID,deletedOrder) //sletter heisens currentOrder
 					}
 				}
 
@@ -88,10 +87,10 @@ func CheckAndAddOrder(fsmCh config.FSMChannels, netCh config.NetworkChannels){
 				if received_order.New_order.Approved{
 					//legg til i ordrekø! evt fjern fra ordrekø!
 					if orderhandler.IsMaster(){
-
-						received_order.ID = orderhandler.GetElevID()
+						received_order.Elev_ID = orderhandler.GetElevID()
 						netCh.TransmitterCh <- received_order
 					}
+
 					if MsgOrder.Type_action == 1{
 						orderhandler.AddOrder(MsgOrder.Floor, MsgOrder.ButtonType, 0) //elevatorID er 0 om det bare skal legges inn ordre uten at noen tar den.)
 					}else{ 
@@ -102,11 +101,11 @@ func CheckAndAddOrder(fsmCh config.FSMChannels, netCh config.NetworkChannels){
 				}
 
 				if orderhandler.IsMaster(){
-					received_order.ID = orderhandler.GetElevID()
+					received_order.Elev_ID = orderhandler.GetElevID()
 					netCh.TransmitterCh <- received_order
 
 				}else{ //er slave
-					received_order.ID = orderhandler.GetElevID()
+					received_order.Elev_ID = orderhandler.GetElevID()
 					received_order.New_order.Approved = true
 					netCh.TransmitterCh <- received_order
 
@@ -117,20 +116,26 @@ func CheckAndAddOrder(fsmCh config.FSMChannels, netCh config.NetworkChannels){
 }
 
 func Arbitrator(ch config.NetworkChannels){ //kjøres bare av Master. Master kan bytte underveis. Derfor må det sjekkes hver gang og den må være inni while-loopen // KJØRES SOM GOROUNTINE
-	currentOrderList := orderhandler.GetCurrentOrderList()
+	elevList := orderhandler.GetElevList()
 	order := config.Order{}
 	Msg := config.Packet{}
 	for{
 		if orderhandler.IsMaster(){
-			for i:=0; i < config.NUM_ELEVATORS;i++{ //går gjennom heisene
-				if currentOrderList[i].Floor == -1{
-					//Heis nr i har ingen current orders!
-					newOrder := orderhandler.GetNewOrder(orderhandler.GetCurrentFloorList()[i], i)
+			for i := 0 ; i < config.NUM_ELEVATORS; i++{ //går gjennom heisene
+				elevator := elevList[i]	//HUSK AT LISTA ER 0-INDEKSERT. ELEVID 1 ER PLASSERT PÅ INDEX 0
+				if elevator.CurrentOrder.Floor == -1{
+					//Heis nr i+1 har ingen current orders!
+					newOrder := orderhandler.GetNewOrder(elevator.CurrentFloor, i) //antar at hall_order_list er oppdatert!
+					
 					if newOrder.Floor != -1{
-						if i == orderhandler.GetElevID()-1{
-							//Master skal gi ordre til seg selv.
+						orderhandler.AddNewCurrentOrder(elevator.ElevID, newOrder)
+						orderhandler.AddOrder(newOrder.Floor, newOrder.ButtonType, elevator.ElevID)
+
+						if 	orderhandler.GetElevID() == i+1{		//Master skal gi ordre til seg selv.
 							fmt.Println("Jeg som master tilegner en ordre til meg selv")
+
 							orderhandler.SetCurrentOrder(newOrder.Floor)
+
 						} else{
 							fmt.Println("Jeg som master har en ordre til heis nr ",i+1)
 
@@ -207,7 +212,7 @@ func SendMsg(TransmitterCh chan <- config.Packet){
 	Msg := config.Packet{}
 	for{
 		Msg.Order_list = orderhandler.GetHallOrderQueue()
-		Msg.ID = orderhandler.GetElevID()
+		Msg.Elev_ID = orderhandler.GetElevID()
 		Msg.CurrentFloor = orderhandler.GetCurrentFloor()
 		Msg.State = orderhandler.GetCurrentState()
 		//fmt.Println("Sender kø:   ",orderhandler.GetHallOrderQueue())
