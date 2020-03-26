@@ -49,11 +49,12 @@ func RunElevator(ch config.FSMChannels){
 
 		switch state{
 		case IDLE: //heis er IDLE. Skal ikke gjøre noe med mindre den får knappetrykk eller får inn en ordre som skal utføres
-			newOrder := orderhandler.GetNewOrder()
-			if newOrder.Floor != -1{
-				fmt.Println("Det er funnet en ordre! Denne skal jeg utføre")
-				orderhandler.AddOrder(newOrder.Floor, newOrder.ButtonType, orderhandler.GetElevID())
-				orderhandler.SetCurrentOrder(newOrder.Floor)
+			//newOrder := orderhandler.GetNewOrder()
+			destination := orderhandler.GetCurrentOrderList()[orderhandler.GetElevID()-1]
+			if destination.Floor != -1{
+				fmt.Println("Jeg har fått en oppgave! Denne skal jeg utføre")
+				//orderhandler.AddOrder(newOrder.Floor, newOrder.ButtonType, orderhandler.GetElevID())
+				//orderhandler.SetCurrentOrder(newOrder.Floor)
 				orderhandler.SetCurrentDir(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()))
 
 				elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))

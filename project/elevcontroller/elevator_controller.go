@@ -14,7 +14,9 @@ func Initialize(elevID int, localhost string){
     elevio.Init(localhost, config.NUM_FLOORS) //"localhost:15657"
 	InitializeLights(config.NUM_FLOORS)
 	orderhandler.SetElevatorID(elevID)
+	orderhandler.SetElevatorRank(elevID) //ranken starter med samme som elevID
 	orderhandler.InitQueues()
+
 
     //Wipe alle ordre til nå??
 }
@@ -23,16 +25,19 @@ func CheckAndAddOrder(fsmCh config.FSMChannels, netCh config.NetworkChannels){
 	//KJØRES SOM GOROUNTINE
 	order := config.Order{}
 	Msg := config.Packet{}
+	i := 0
 	for{
 		select{
 			case buttonpress := <- fsmCh.Drv_buttons: //Fått inn knappetrykk
 				fmt.Println("Knapp er trykket ", int(buttonpress.Button), buttonpress.Floor)
 				//orderhandler.AddOrder(buttonpress.Floor, int(buttonpress.Button),0) //0 fordi det bare skal legges til ordre. Ingen har tatt den enda.
 
-				Msg.Order_list = orderhandler.GetHallOrderQueue()
+				//Msg.Order_list = orderhandler.GetHallOrderQueue()
 				Msg.ID = orderhandler.GetElevID()
 				Msg.CurrentFloor = orderhandler.GetCurrentFloor()
-				Msg.State = orderhandler.GetCurrentState()
+				//Msg.CurrentOrder = orderhandler.GetCurrentOrder()
+				//Msg.State = orderhandler.GetCurrentState()
+				Msg.Is_new_current_order = false
 
 				order.Floor = buttonpress.Floor
 				order.ButtonType = int(buttonpress.Button)
@@ -52,24 +57,56 @@ func CheckAndAddOrder(fsmCh config.FSMChannels, netCh config.NetworkChannels){
 			case received_order := <- netCh.ReceiverCh:
 
 				if received_order.ID == orderhandler.GetElevID() || (received_order.ID!=1 && orderhandler.GetElevID()!=1){		//hvis det er fra deg selv eller du er slave og pakken er fra slave: IGNORE!
-				break //litt usikker på hvordan break funker
+					break //Drit i ordre fra deg selv
 				}
+				MsgOrder := received_order.New_order
+
+
+
+				if received_order.New_current_order_to_who == orderhandler.GetElevID{ //Heisen har fått en ny current order fra Master.
+					//orderhandler.AddOrder(MsgOrder.Floor, MsgOrder.ButtonType, orderhandler.GetElevID())
+					orderhandler.SetCurrentOrder(MsgOrder.Floor)
+					//orderhandler.SetCurrentDir(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()))
+
+					break
+				}
+
+				orderhandler.UpdateCurrentFloorList(received_order.ID, received_order.CurrentFloor)
+
+				if MsgOrder.Type_action == -1 && orderhandler.IsMaster() && !MsgOrder.Approved{ //Master må eventuelt fjerne currentOrder for heisen som sender inn slettet ordre.
+					if MsgOrder.Floor == orderhandler.GetCurrentOrderList()[received_order.ID].Floor{
+						//heisen har nettopp utført sin currentOrder
+						deletedOrder := orderhandler.Order{}
+						deletedOrder.Floor = -1
+						deletedOrder.ButtonType = -1
+
+						orderhandler.UpdateCurrentOrderList(received_order.ID,deletedOrder) //sletter heisens currentOrder
+					}
+				}
+
 
 				if received_order.New_order.Approved{
 					//legg til i ordrekø! evt fjern fra ordrekø!
-					if received_order.New_order.Type_action == 1{
-						orderhandler.AddOrder(received_order.New_order.Floor, received_order.New_order.ButtonType, 0) //elevatorID er 0 om det bare skal legges inn ordre uten at noen tar den.)
-					}else{
-						orderhandler.AddOrder(received_order.New_order.Floor, received_order.New_order.ButtonType, -1)
+					if orderhandler.IsMaster(){
+
+						received_order.ID = orderhandler.GetElevID()
+						netCh.TransmitterCh <- received_order
+					}
+					if MsgOrder.Type_action == 1{
+						orderhandler.AddOrder(MsgOrder.Floor, MsgOrder.ButtonType, 0) //elevatorID er 0 om det bare skal legges inn ordre uten at noen tar den.)
+					}else{ 
+						orderhandler.AddOrder(MsgOrder.Floor, MsgOrder.ButtonType, -1) //fjerner ordre
 					}
 					fsmCh.LightUpdateCh <- true //hvis ordrekø er endret oppdateres lysene.
 					break
 				}
 
 				if orderhandler.IsMaster(){
+					received_order.ID = orderhandler.GetElevID()
 					netCh.TransmitterCh <- received_order
 
 				}else{ //er slave
+					received_order.ID = orderhandler.GetElevID()
 					received_order.New_order.Approved = true
 					netCh.TransmitterCh <- received_order
 
@@ -78,6 +115,41 @@ func CheckAndAddOrder(fsmCh config.FSMChannels, netCh config.NetworkChannels){
 		}
 	}
 }
+
+func Arbitrator(ch config.NetworkChannels){ //kjøres bare av Master. Master kan bytte underveis. Derfor må det sjekkes hver gang og den må være inni while-loopen // KJØRES SOM GOROUNTINE
+	currentOrderList := orderhandler.GetCurrentOrderList()
+	order := config.Order{}
+	Msg := config.Packet{}
+	for{
+		if orderhandler.IsMaster(){
+			for i:=0; i < config.NUM_ELEVATORS;i++{ //går gjennom heisene
+				if currentOrderList[i].Floor == -1{
+					//Heis nr i har ingen current orders!
+					newOrder := orderhandler.GetNewOrder(orderhandler.GetCurrentFloorList()[i], i)
+					if newOrder.Floor != -1{
+						if i == orderhandler.GetElevID()-1{
+							//Master skal gi ordre til seg selv.
+							fmt.Println("Jeg som master tilegner en ordre til meg selv")
+							orderhandler.SetCurrentOrder(newOrder.Floor)
+						} else{
+							fmt.Println("Jeg som master har en ordre til heis nr ",i+1)
+
+							Msg.New_current_order_to_who = i+1
+							order.Floor = newOrder.Floor
+							order.ButtonType = newOrder.ButtonType
+							Msg.New_order = order
+							ch.TransmitterCh <- Msg
+						}
+					}
+
+				}
+			}
+		}
+
+	}
+
+}
+
 
 //Kan vel kanskje i stedet bare fjerne alle ordre og så kjøre update lights??
 func InitializeLights(numFloors int){ //NB: Endra her navn til numHallButtons
@@ -95,7 +167,7 @@ func InitializeLights(numFloors int){ //NB: Endra her navn til numHallButtons
 
 }
 
-func TestReceiver(ch config.NetworkChannels, LightUpdateCh chan <- bool){
+func TestReceiver(ch config.NetworkChannels){
 	fmt.Println("Har kommet inn i TestReceiver")
 	for {
 		select {
@@ -105,6 +177,7 @@ func TestReceiver(ch config.NetworkChannels, LightUpdateCh chan <- bool){
 			fmt.Printf("  New:      %q\n", p.New)
 			fmt.Printf("  Lost:     %q\n", p.Lost)
 
+			/*
 		case packet := <-ch.ReceiverCh:
 			//fmt.Printf("Received: %#v\n", a.Order_list)
 			//fmt.Println("Mottar fra: ",a.ID," OPP \t NED") //opp ned er bare for at man skal forstå ordrekøen.
@@ -124,7 +197,7 @@ func TestReceiver(ch config.NetworkChannels, LightUpdateCh chan <- bool){
 			LightUpdateCh <- true
 
 			//UPDATE BARE LIGHTS OM DET ER EN ENDRING. GJØR DETTE INNI DE FORSKJELLIGE FUNKSJONENE
-
+*/
 		}
 	}
 }

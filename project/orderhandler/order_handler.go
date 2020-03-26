@@ -41,14 +41,25 @@ type Order struct{
 
 var cabOrderQueue = &CabOrders{}//variabelen som kan endres på
 
+var currentOrderList = &[config.NUM_ELEVATORS] Order{}
+var currentFloorList = &[config.NUM_ELEVATORS] int{}
 
 func IsMaster()bool{
-	if elevatorID == 1{
+	if elevatorRank == 1{
 		return true
 	}
 	return false
 }
 
+func UpdateCurrentOrderList(elevID int, current_order Order){ //evt bytte ut int med en Ordre? Tror egt vi bare trenger FloorNr, men er kanskje mer leselig om man tar med hele order.
+	*currentOrderList[elevID] = current_order
+}
+func UpdateCurrentFloorList(elevID int, current_floor int){ //evt bytte ut int med en Ordre? Tror egt vi bare trenger FloorNr, men er kanskje mer leselig om man tar med hele order.
+	*currentOrderList[elevID] = current_floor
+}
+
+
+func SetElevatorRank(rank int){elevatorRank = rank}
 func SetElevatorID(ID int){elevatorID = ID}
 func SetCurrentFloor(floor int){currentFloor = floor}
 func SetCurrentDir(dir int){currentDir = dir}
@@ -63,6 +74,8 @@ func GetElevID()int {return elevatorID}
 func GetElevRank()int {return elevatorRank}
 func GetHallOrderQueue()[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int{return *hallOrderQueue}
 func GetCurrentState()int{return currentState}
+func GetCurrentOrderList()[config.NUM_ELEVATORS] Order{return *currentOrderList}
+func GetCurrentFloorList()[config.NUM_ELEVATORS] int{return *currentFloorList}
 
 
 
@@ -70,6 +83,7 @@ func GetCurrentState()int{return currentState}
 func InitQueues(){
 	InitCabQueue(cabOrderQueue)
 	InitHallQueue(hallOrderQueue)
+	InitCurrentOrderList(currentOrderList)
 }
 
 func InitHallQueue(queue *[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int){
@@ -88,6 +102,13 @@ func InitCabQueue(queue *CabOrders){
 	}
 }
 
+func InitCurrentOrderList(list *[config.NUM_ELEVATORS]int){
+	for i:=0;i<config.NUM_ELEVATORS;i++{
+		list[i].Floor = -1
+		list[i].ButtonType = -1
+	}
+}
+
 
 func GetDirection(currentFloor int, currentOrder int) int{
 	if currentOrder == -1 || currentOrder == currentFloor { //enten har den ikke noen retning, eller så er den på riktig floor
@@ -103,27 +124,27 @@ func GetDirection(currentFloor int, currentOrder int) int{
 
 
 
-func GetNewOrder() Order{ //returnerer en ordre med floor: -1 om det ikke er noen ordre.
+func GetNewOrder(elevCurrentFloor int, elevID int) Order{ //returnerer en ordre med floor: -1 om det ikke er noen ordre.
 	newOrder := Order{}
-	if IsThereOrder(currentFloor,0,elevatorID){
-		newOrder.Floor = currentFloor
+	if IsThereOrder(elevCurrentFloor,0,elevID){
+		newOrder.Floor = elevCurrentFloor
 		newOrder.ButtonType = 0
 		return newOrder
-	}else if IsThereOrder(currentFloor,1,elevatorID){
-		newOrder.Floor = currentFloor
+	}else if IsThereOrder(elevCurrentFloor,1,elevID){
+		newOrder.Floor = elevCurrentFloor
 		newOrder.ButtonType = 1
 		return newOrder
 	}
 
 	for i := 0; i < config.NUM_FLOORS; i++{
-		if IsThereOrder(i, 2, elevatorID){
+		if IsThereOrder(i, 2, elevID){
 			//det finnes en cab order
 			newOrder.Floor = i 
 			newOrder.ButtonType = 2
 			return newOrder
 		}
 		for j := 0; j < config.NUM_HALLBUTTONS; j++{
-			if IsThereOrder(i, j, elevatorID){
+			if IsThereOrder(i, j, elevID){
 				newOrder.Floor = i
 				newOrder.ButtonType = j
 				return newOrder

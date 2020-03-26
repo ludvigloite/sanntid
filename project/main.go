@@ -73,8 +73,8 @@ func main(){
     go elevcontroller.CheckAndAddOrder(fsmChannels,networkChannels)
     go orderhandler.LightUpdater(fsmChannels.LightUpdateCh)
 
-    go elevcontroller.SendMsg(networkChannels.TransmitterCh)
-    go elevcontroller.TestReceiver(networkChannels, fsmChannels.LightUpdateCh)
+    //go elevcontroller.SendMsg(networkChannels.TransmitterCh)
+    go elevcontroller.TestReceiver(networkChannels)
 
     fsm.RunElevator(fsmChannels) //kjøre som go?
 }
