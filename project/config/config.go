@@ -38,19 +38,19 @@ const(
 	DOOR_OPEN 	= 2
 	UNDEFINED 	= 3
 )
-
+/*
 type Type_Action int
 const{
 	ADD Type_Action = 1
 	REMOVE = -1
-}
+}*/
 
 type Order struct{
 	Sender_elev_ID 		int
 	Sender_elev_rank 	int
 	Floor 				int
 	ButtonType 			config.ButtonType
-	Type_action 		Type_Action //-1 hvis ordre skal slettes, 1 hvis ordre blir lagt til.
+	Should_add			bool //-1 hvis ordre skal slettes, 1 hvis ordre blir lagt til.
 	Packet_id 			int
 	Approved 			bool
 	Receiver_elev 		int
@@ -101,10 +101,11 @@ type FSMChannels struct {
     LightUpdateCh		chan bool
     New_state			chan Elevator
     New_current_order 	chan Order
+    Stopping_at_floor	chan int
 }
 
 type NetworkChannels struct{
-	PeerUpdateCh 			chan peers.PeerUpdate
+	PeerUpdatAeCh 			chan peers.PeerUpdate
 	PeerTxEnable 			chan bool
 	TransmittOrderCh 		chan Order
 	ReceiveOrderCh 			chan Order

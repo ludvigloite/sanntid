@@ -184,6 +184,7 @@ func GetNewOrder(elevCurrentFloor int, elevID int) config.Order{ //returnerer en
 		newOrder.Floor = elevCurrentFloor
 		newOrder.ButtonType = 0
 		return newOrder
+		
 	}else if IsThereOrder(elevCurrentFloor,1,elevID){
 		newOrder.Floor = elevCurrentFloor
 		newOrder.ButtonType = 1
@@ -259,7 +260,7 @@ func ShouldStopAtFloor(currentFloor int, currentOrder int, elevID int) bool{
 
 func ClearCurrentFloor(elevator *config.Elevator){
 	currentFloor = *elevator.CurrentFloor
-	
+
 	*elevator.HallOrders[currentFloor][config.BT_HallDown] = false
 	*elevator.HallOrders[currentFloor][config.BT_HallUp] = false
 	*elevator.CabOrders[currentFloor] = false

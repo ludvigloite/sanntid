@@ -78,6 +78,8 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 					ch.Open_door <- true
 					elevio.SetMotorDirection(elevio.MD_Stop)
 					*elevatorMap[elevID].CurrentState = config.DOOR_OPEN
+
+					ch.Stopping_at_floor <- reachedFloor //sender til de andre heisene slik at de kan slette alt i den etasjen.
 				}
 				go func(){ch.New_state <- *elevatorMap[elevID]} //sender kun sin egen Elevator!
 

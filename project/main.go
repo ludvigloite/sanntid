@@ -9,6 +9,7 @@ import(
     "./orderhandler"
     "./network/peers"
     "./network/bcast"
+    "./arbitrator"
     //"./orderhandler"
     "strconv"
     "fmt"
@@ -59,6 +60,7 @@ func main(){
         LightUpdateCh: make(chan bool),
         New_state: make(chan config.Elevator),
         New_current_order: make(chan config.Order),
+        Stopping_at_floor: make(chan int),
     }
 
     networkChannels := config.NetworkChannels{
@@ -93,7 +95,7 @@ func main(){
 
     go Sender(fsmChannels, networkChannels, elevID, elevatorMap)
     go Receiver(networkChannels, elevID, elevatorMap)
-    //go elevcontroller.Arbitrator(networkChannels)
+    go arbitrator.Arbitrator(networkChannels, elevID, elevatorMap)
 
     fsm.RunElevator(fsmChannels, elevID, elevatorMap) //kjøre som go?
 }
