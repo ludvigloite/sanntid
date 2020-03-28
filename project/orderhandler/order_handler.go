@@ -257,11 +257,12 @@ func ShouldStopAtFloor(currentFloor int, currentOrder int, elevID int) bool{
 }
 */
 
-func ClearFloor(floor int){ //fjerner alle ordre i denne etasjen fra køene. Kan bare utføres av heisen selv
-	//gjør det noe at den setter -1 til 1 etasje ned og 4 etasje opp??
-	hallOrderQueue[floor][0] = -1
-	hallOrderQueue[floor][1] = -1
-	cabOrderQueue.Active[floor] = -1
+func ClearCurrentFloor(elevator *config.Elevator){
+	currentFloor = *elevator.CurrentFloor
+	
+	*elevator.HallOrders[currentFloor][config.BT_HallDown] = false
+	*elevator.HallOrders[currentFloor][config.BT_HallUp] = false
+	*elevator.CabOrders[currentFloor] = false
 }
 
 func LightUpdater(LightUpdateCh <-chan bool){

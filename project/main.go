@@ -64,8 +64,8 @@ func main(){
     networkChannels := config.NetworkChannels{
         PeerUpdateCh : make(chan peers.PeerUpdate),
         PeerTxEnable : make(chan bool),
-        TransmittOrderCh: make(chan config.Packet),
-        ReceiveOrderCh: make(chan config.Packet),
+        TransmittOrderCh: make(chan config.Order),
+        ReceiveOrderCh: make(chan config.Order),
         TransmittElevStateCh: make(chan config.Elevator),
         ReceiveElevStateCh: make(chan config.Elevator),
         TransmittCurrentOrderCh: make(chan config.Order),
@@ -91,9 +91,9 @@ func main(){
     go elevcontroller.CheckAndAddOrder(fsmChannels,networkChannels)
     go orderhandler.LightUpdater(fsmChannels.LightUpdateCh)
 
-    //go elevcontroller.SendMsg(networkChannels.TransmitterCh)
-    //go elevcontroller.TestReceiver(networkChannels)
-    go elevcontroller.Arbitrator(networkChannels)
+    go Sender(fsmChannels, networkChannels, elevID, elevatorMap)
+    go Receiver(networkChannels, elevID, elevatorMap)
+    //go elevcontroller.Arbitrator(networkChannels)
 
     fsm.RunElevator(fsmChannels, elevID, elevatorMap) //kjøre som go?
 }

@@ -20,7 +20,7 @@ func InitQueues(elevator *config.Elevator){
 	for i := 0;i < config.NUM_FLOORS; i++ {
 		*elevator.CabOrders[i] = false //INIT CABORDERS
 
-		for j := 0;j< config.NUM_HALLBUTTONS; j++{
+		for j := elevio.BT_HallUp; j< config.NUM_HALLBUTTONS; j++{
 			*elevator.HallOrders[i][j] = false //INIT HALLORDERS
 		}
 	}
@@ -185,7 +185,9 @@ func PrintElevator(elevator config.Elevator){
 	fmt.Println("CurrentState = ", elevator.CurrentState)
 }
 
-func GetDirection(currentFloor int, destinationFloor int) elevio.MotorDirection{
+func GetDirection(elevator config.Elevator) elevio.MotorDirection{
+	currentFloor := elevator.CurrentFloor
+	destinationFloor := elevator.CurrentOrder.Floor
 	if destinationFloor == -1 || destinationFloor == currentFloor { //enten har den ikke noen retning, eller så er den på riktig floor
 		return elevio.MD_Stop
 
@@ -198,37 +200,28 @@ func GetDirection(currentFloor int, destinationFloor int) elevio.MotorDirection{
 }
 
 func ShouldStopAtFloor(elevator config.Elevator) bool{
-	id = elevator.Elev_ID
-	currentFloor = elevator.CurrentFloor
-	destinationFloor = elevator.CurrentOrder.Floor
-	dir = elevator.CurrentDir
+	currentFloor := elevator.CurrentFloor
+	dir := elevator.CurrentDir
+	destinationFloor := elevator.CurrentOrder.Floor
+	if currentFloor == destinationFloor{
+		return true
+	}
 	if dir == MD_Stop{ //har ingen ordre eller er på etasjen currentOrder tilsier. KAN FØRE TIL ERROR!!
 		return true
 	}
-	if IsThereOrder(currentFloor,2,elevID){ //Det er en cab order i denne etasjen
+	if elevator.CabOrders[currentFloor]{ //Det er en cab order i denne etasjen
 		return true
 	}
-	if IsThereOrder(currentFloor,0,elevID) && dir == 1{ //retning til heis er opp og det er en ordre opp
+	if elevator.HallOrders[currentFloor][BT_HallUp] && dir == MD_Up{ //retning til heis er opp og det er en ordre opp
 		return true
 	}
-	if IsThereOrder(currentFloor,1,elevID) && dir == -1 { //retning til heis er ned og det er en ordre ned
+	if elevator.HallOrders[currentFloor][BT_HallDown] && dir == MD_Down { //retning til heis er ned og det er en ordre ned
 		return true
 	}
 	return false
 }
 
-func IsThereOrder(floor int, buttonType config.ButtonType, elevID int) bool{ //kan kanskje bare implementeres i ShouldStopAtFloor
-	if buttonType == BT_Cab{
-		if cabOrderQueue.Active[floor] == 0 && cabOrderQueue.ElevID == elevID{
-			return true
-		}
-	} else{
-		if hallOrderQueue[floor][buttonType] == 0 || hallOrderQueue[floor][buttonType] == elevID{
-			return true
-		}
-	}
-	return false
-}
+
 
 func TestReceiver(ch config.NetworkChannels){
 	fmt.Println("Har kommet inn i TestReceiver")

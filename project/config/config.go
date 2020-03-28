@@ -1,4 +1,4 @@
-xpackage config
+package config
 
 
 import( 
@@ -46,25 +46,36 @@ const{
 }
 
 type Order struct{
-	Floor 			int
-	ButtonType 		config.ButtonType
-	Type_action 	Type_Action //-1 hvis ordre skal slettes, 1 hvis ordre blir lagt til.
-	Packet_id 		int
-	Approved 		bool
-	Receiver_elev 	int
+	Sender_elev_ID 		int
+	Sender_elev_rank 	int
+	Floor 				int
+	ButtonType 			config.ButtonType
+	Type_action 		Type_Action //-1 hvis ordre skal slettes, 1 hvis ordre blir lagt til.
+	Packet_id 			int
+	Approved 			bool
+	Receiver_elev 		int
 }
 
-
+/*type ButtonType int
+const (
+	BT_HallUp   ButtonType = 0  //////VIKTIG!!
+	BT_HallDown            = 1
+	BT_Cab                 = 2
+)*/
 
 type Elevator struct{
+	Active bool
 	ElevID int
 	ElevRank int
 	CurrentOrder Order
 	CurrentFloor int
 	CurrentDir elevio.MotorDirection
 	CurrentState State
+	CabOrders [NUM_FLOORS]bool
+	HallOrders [NUM_FLOORS][NUM_HALLBUTTONS]bool
 }
 
+/*
 type Packet struct {
 	Elev_ID                		int
 	Elev_rank 					int
@@ -80,7 +91,7 @@ type Packet struct {
 	Rank 						int //bytter underveis
 	CurrentFloor 				int //hvilken etasje er heisen i nå. 0 , 1 , 2 , 3
 	CurrentDir 					int //hvilken retning har heisen. -1 , 0 , 1. Kun 0 i spesielle tilfeller. Er -1 / 1 også når den stopper i et floor. Den skal jo tross alt videre i samme retning.
-}
+}*/
 
 type FSMChannels struct {
 	Drv_buttons 		chan elevio.ButtonEvent
@@ -95,8 +106,8 @@ type FSMChannels struct {
 type NetworkChannels struct{
 	PeerUpdateCh 			chan peers.PeerUpdate
 	PeerTxEnable 			chan bool
-	TransmittOrderCh 		chan Packet
-	ReceiveOrderCh 			chan Packet
+	TransmittOrderCh 		chan Order
+	ReceiveOrderCh 			chan Order
 	TransmittElevStateCh 	chan Elevator
 	ReceiveElevStateCh 		chan Elevator
 	TransmittCurrentOrderCh	chan Order
