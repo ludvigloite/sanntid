@@ -9,80 +9,74 @@ import(
 
 
 
-func RunElevator(ch config.FSMChannels, elevID int, elevatorList *[config.NUM_ELEVATORS] config.Elevator){
-	state := config.IDLE
-	orderhandler.SetCurrentState(0)
-
-
-	///////////////////////////////////
-	//	ch.Drv_buttons
-    //	ch.Drv_floors
-    //	ch.Open_door
-    //	ch.Close_door
-    //////////////////////////////////
-
+func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator){
+	
     /* 		INIT 	*/
-	elevio.SetMotorDirection(elevio.MD_Down)
 
-	a := <- ch.Drv_floors
-	for a == -1{
-		a = <- ch.Drv_floors
+    p := <-ch.PeerUpdateCh
+	NuActiveElevators := length(p.Peers)
+
+	elevator = config.Elevator{
+		ElevID: elevID,
+		ElevRank: NuActiveElevators, //Dette fikses ved at man sjekker hvor mange heiser som er online.
+		CurrentOrder: config.Order{Floor:-1, ButtonType:-1}, //usikker på om denne initialiseringen funker.
+		CurrentFloor: -1,
+		CurrentDir: elevio.MD_Down,
+		CurrentState: config.IDLE,
+		CabOrders: [config.NUM_FLOORS]bool{},
+		HallOrders: [config.NUM_FLOORS][config.NUM_HALLBUTTONS]bool{},
+	}
+
+	elevcontroller.Initialize(&elevator)
+
+	floor := <- ch.Drv_floors
+	for floor == -1{
+		floor = <- ch.Drv_floors
 	}
 
 	elevio.SetMotorDirection(elevio.MD_Stop)
-	orderhandler.SetCurrentFloor(a)
-	orderhandler.SetCurrentDir(0)
-	elevio.SetFloorIndicator(a)
-	fmt.Println("Heisen er intialisert og venter i etasje nr ", a)
-	/*		INIT FERDIG		*/
+	elevio.SetFloorIndicator(floor)
+	elevator.CurrentFloor = floor
+	elevator.CurrentDir = elevio.MD_Stop
 
-	//INITIALISER ELEV I ELEVATOR_LIST!!
-	elevator = config.Elevator{
-		ElevID: elevID,
-		ElevRank: 3,
-		CurrentOrder: config.Order{Floor:-1, ButtonType:-1},
-		CurrentFloor: a,
-		CurrentState: config.IDLE,
-	}
-	elevatorList[id] = elevator
+	elevcontroller.PrintElevator(elevator)
+
+	elevatorMap[elevID] = &elevator //Denne lokale lista vil oppdateres automatisk!
 	
 	stateIsChanged := true
 
+	/*		INIT FERDIG		*/
+	fmt.Println("Heisen er intialisert og venter i etasje nr ", floor)
+
 	for{
-		
 
-		switch state{
-		case config.IDLE: //heis er IDLE. Skal ikke gjøre noe med mindre den får knappetrykk eller får inn en ordre som skal utføres
+		switch *elevatorList[elevID].CurrentState{
+		case config.IDLE:
 			
-			elevator := orderhandler.GetElevList()[orderhandler.GetElevID()-1]
-			destination := elevator.CurrentOrder
+			destination := *elevatorMap[elevID].CurrentOrder
 			if destination.Floor != -1{
-				fmt.Println("Jeg har fått en oppgave! Denne skal jeg utføre")
-				//orderhandler.AddOrder(newOrder.Floor, newOrder.ButtonType, orderhandler.GetElevID())
-				elevator.CurrentOrder = destination
-				//orderhandler.SetCurrentOrder(destination.Floor)
+				fmt.Println("Jeg har fått en oppgave i etasje ",destination.Floor,"! Denne skal jeg utføre")
 
-				HER JOBBER JEG NÅ!!! prøver å kutte ut alle lokale variable for currentFloor osv!!
+				*elevatorMap[elevID].CurrentDir = elevcontroller.GetDirection(*elevatorMap[elevID].CurrentFloor, *elevatorMap[elevID].CurrentOrder.Floor) //kanskje jeg må bruke destination istedet for elevator.CurrentOrder. Ting kan fucke segf om currentorder endres! 
 
-				orderhandler.SetCurrentDir(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()))
-
-				elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))
-				state = config.ACTIVE
+				elevio.SetMotorDirection(*elevatorMap[elevID].CurrentDir)
+				*elevatorMap[elevID].CurrentState = config.ACTIVE
 				stateIsChanged = true
 
-				orderhandler.SetCurrentState(1)
 			}
 			if stateIsChanged{
-				go func(){ch.New_state <- }
+				go func(){ch.New_state <- *elevatorMap[elevID]} //sender kun sin egen Elevator!
+				stateIsChanged = false
 			}
 
 		case config.ACTIVE:
-			//orderhandler.UpdateLights()
 			select{
 			case reachedFloor := <- ch.Drv_floors:
-				orderhandler.SetCurrentFloor(reachedFloor)
+				stateIsChanged = true
 				elevio.SetFloorIndicator(reachedFloor)
-				if orderhandler.ShouldStopAtFloor(reachedFloor, orderhandler.GetCurrentOrder(), orderhandler.GetElevID()){
+				*elevatorMap[elevID].CurrentFloor = reachedFloor
+
+				if orderhandler.ShouldStopAtFloor(*elevatorMap[elevID]){
 					fmt.Println("stopping at floor")
 
 					elevio.SetDoorOpenLamp(true)

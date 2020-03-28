@@ -158,7 +158,7 @@ func InitCurrentOrderFloorLists(orderList *[config.NUM_ELEVATORS] config.Order, 
 	}
 }
 
-
+/*
 func GetDirection(currentFloor int, currentOrder int) int{
 	if currentOrder == -1 || currentOrder == currentFloor { //enten har den ikke noen retning, eller så er den på riktig floor
 		return 0
@@ -169,7 +169,7 @@ func GetDirection(currentFloor int, currentOrder int) int{
 	} else{
 		return -1
 	}
-}
+}*/
 
 
 
@@ -221,7 +221,7 @@ func AddOrder(floor int, buttonType int, elevatorID int){ //elevatorID er 0 om d
 }
 
 
-
+/*
 func IsThereOrder(floor int, buttonType int, elevID int) bool{ //buttontype: 0=opp 1=ned 2=cabOrder //kan kanskje bare implementeres i ShouldStopAtFloor //kan kanskje fjerne elevID og heller bruke global variabel
 	if buttonType == 2{
 		//fmt.Println(elevID," ... ", cabOrderQueue.ElevID)
@@ -235,9 +235,10 @@ func IsThereOrder(floor int, buttonType int, elevID int) bool{ //buttontype: 0=o
 	}
 	return false
 }
+*/
 
 
-
+/*
 func ShouldStopAtFloor(currentFloor int, currentOrder int, elevID int) bool{
 	dir := GetDirection(currentFloor,currentOrder) //-1, 0 eller 1
 	if dir == 0{ //har ingen ordre eller er på etasjen currentOrder tilsier
@@ -254,6 +255,7 @@ func ShouldStopAtFloor(currentFloor int, currentOrder int, elevID int) bool{
 	}
 	return false
 }
+*/
 
 func ClearFloor(floor int){ //fjerner alle ordre i denne etasjen fra køene. Kan bare utføres av heisen selv
 	//gjør det noe at den setter -1 til 1 etasje ned og 4 etasje opp??

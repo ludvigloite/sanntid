@@ -10,15 +10,20 @@ import(
 )
 
 
-func Initialize(elevID int, localhost string){
-    elevio.Init(localhost, config.NUM_FLOORS) //"localhost:15657"
-	InitializeLights(config.NUM_FLOORS)
-	orderhandler.SetElevatorID(elevID)
-	orderhandler.SetElevatorRank(elevID) //ranken starter med samme som elevID
-	orderhandler.InitQueues()
+func Initialize(elevator *config.Elevator){
+	elevio.SetMotorDirection(elevio.MD_Down)
+	elevcontroller.ResetLights()	
+	InitQueues(&elevator)
+}
 
+func InitQueues(elevator *config.Elevator){
+	for i := 0;i < config.NUM_FLOORS; i++ {
+		*elevator.CabOrders[i] = false //INIT CABORDERS
 
-    //Wipe alle ordre til nå??
+		for j := 0;j< config.NUM_HALLBUTTONS; j++{
+			*elevator.HallOrders[i][j] = false //INIT HALLORDERS
+		}
+	}
 }
 
 func CheckAndAddOrder(fsmCh config.FSMChannels, netCh config.NetworkChannels){
@@ -157,8 +162,8 @@ func Arbitrator(ch config.NetworkChannels){ //kjøres bare av Master. Master kan
 
 
 //Kan vel kanskje i stedet bare fjerne alle ordre og så kjøre update lights??
-func InitializeLights(numFloors int){ //NB: Endra her navn til numHallButtons
-	//Slår av lyset på alle lys
+func ResetLights(){	//Slår av lyset på alle lys
+	numFloors := config.NUM_FLOORS
 	elevio.SetDoorOpenLamp(false)
 	for i := 0; i < numFloors; i++{
 		elevio.SetButtonLamp(elevio.BT_Cab, i, false)
@@ -170,6 +175,59 @@ func InitializeLights(numFloors int){ //NB: Endra her navn til numHallButtons
 		}
 	}
 
+}
+
+func PrintElevator(elevator config.Elevator){
+	fmt.Println()
+	fmt.Println("elevID: ",elevator.ElevID,"\t Rank: ",elevator.ElevRank)
+	fmt.Println("CurrentOrder = Floor: ",elevator.CurrentOrder.Floor, "\t ButtonType: ",elevator.CurrentOrder.ButtonType)
+	fmt.Println("CurrentFloor = ", elevator.CurrentFloor)
+	fmt.Println("CurrentState = ", elevator.CurrentState)
+}
+
+func GetDirection(currentFloor int, destinationFloor int) elevio.MotorDirection{
+	if destinationFloor == -1 || destinationFloor == currentFloor { //enten har den ikke noen retning, eller så er den på riktig floor
+		return elevio.MD_Stop
+
+	} else if currentFloor < destinationFloor { //heisen er lavere enn sin destinasjon -> kjører oppover
+		return elevio.MD_Up
+
+	} else{
+		return elevio.MD_Down
+	}
+}
+
+func ShouldStopAtFloor(elevator config.Elevator) bool{
+	id = elevator.Elev_ID
+	currentFloor = elevator.CurrentFloor
+	destinationFloor = elevator.CurrentOrder.Floor
+	dir = elevator.CurrentDir
+	if dir == MD_Stop{ //har ingen ordre eller er på etasjen currentOrder tilsier. KAN FØRE TIL ERROR!!
+		return true
+	}
+	if IsThereOrder(currentFloor,2,elevID){ //Det er en cab order i denne etasjen
+		return true
+	}
+	if IsThereOrder(currentFloor,0,elevID) && dir == 1{ //retning til heis er opp og det er en ordre opp
+		return true
+	}
+	if IsThereOrder(currentFloor,1,elevID) && dir == -1 { //retning til heis er ned og det er en ordre ned
+		return true
+	}
+	return false
+}
+
+func IsThereOrder(floor int, buttonType config.ButtonType, elevID int) bool{ //kan kanskje bare implementeres i ShouldStopAtFloor
+	if buttonType == BT_Cab{
+		if cabOrderQueue.Active[floor] == 0 && cabOrderQueue.ElevID == elevID{
+			return true
+		}
+	} else{
+		if hallOrderQueue[floor][buttonType] == 0 || hallOrderQueue[floor][buttonType] == elevID{
+			return true
+		}
+	}
+	return false
 }
 
 func TestReceiver(ch config.NetworkChannels){

@@ -1,4 +1,4 @@
-package config
+xpackage config
 
 
 import( 
@@ -31,41 +31,38 @@ const(
 
 )
 
+type State int
 const(
-	IDLE = "IDLE"
-	ACTIVE = "ACTIVE"
-	DOOR_OPEN = "DOOR_OPEN"
-	UNDEFINED = "UNDEFINED"
-)
-
-type ElevState int
-const(
-	Idle = 0
-	Active = 1
-	Lost = 2
+	IDLE State 	= 0
+	ACTIVE 		= 1
+	DOOR_OPEN 	= 2
+	UNDEFINED 	= 3
 )
 
 type Type_Action int
 const{
-	ADD = 1
+	ADD Type_Action = 1
 	REMOVE = -1
 }
 
 type Order struct{
 	Floor 			int
-	ButtonType 		int
-	Type_action 	int //-1 hvis ordre skal slettes, 1 hvis ordre blir lagt til.
+	ButtonType 		config.ButtonType
+	Type_action 	Type_Action //-1 hvis ordre skal slettes, 1 hvis ordre blir lagt til.
 	Packet_id 		int
 	Approved 		bool
 	Receiver_elev 	int
 }
+
+
 
 type Elevator struct{
 	ElevID int
 	ElevRank int
 	CurrentOrder Order
 	CurrentFloor int
-	CurrentState int
+	CurrentDir elevio.MotorDirection
+	CurrentState State
 }
 
 type Packet struct {

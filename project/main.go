@@ -43,9 +43,13 @@ func main(){
 
     rand.Seed(time.Now().UnixNano()) //genererer seed til randomizer.
 
-    elevcontroller.Initialize(elevID, "localhost:"+port)
+    elevio.Init("localhost:"+port,config.NUM_FLOORS)
 
-    var elevatorList = &[config.NUM_ELEVATORS] config.Elevator{}
+    //elevcontroller.Initialize(elevID, "localhost:"+port)
+
+    //var elevatorList = &[config.NUM_ELEVATORS] config.Elevator{}
+    elevatorMap := make(map[int]*config.Elevator)
+
 
     fsmChannels := config.FSMChannels{
         Drv_buttons: make(chan elevio.ButtonEvent), 
@@ -88,8 +92,8 @@ func main(){
     go orderhandler.LightUpdater(fsmChannels.LightUpdateCh)
 
     //go elevcontroller.SendMsg(networkChannels.TransmitterCh)
-    go elevcontroller.TestReceiver(networkChannels)
+    //go elevcontroller.TestReceiver(networkChannels)
     go elevcontroller.Arbitrator(networkChannels)
 
-    fsm.RunElevator(fsmChannels, elevID, elevatorList) //kjøre som go?
+    fsm.RunElevator(fsmChannels, elevID, elevatorMap) //kjøre som go?
 }
