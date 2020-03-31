@@ -2,7 +2,7 @@ package main
 
 import(
     "./fsm"
-    "./elevcontroller"
+    //"./elevcontroller"
     "./config"
     "./elevio"
     "./timer"

@@ -25,6 +25,7 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
         order.ButtonType = buttonPress.Button
         order.Packet_id = rand.Intn(10000)
         order.Should_add = true //Det er en ordre som skal legges til
+        order.Receiver_elev = elevID
         //order.Approved = false
 
         netCh.TransmittOrderCh <- order
@@ -46,13 +47,23 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
         order.Sender_elev_rank = elevatorMap[elevID].ElevRank
         order.Floor = floor
         order.Packet_id = rand.Intn(10000)
-        order.ButtonType = elevio.BT_HallUp
         order.Should_add = false //Det er en ordre som skal legges til
-        netCh.TransmittOrderCh <- order
-        order.ButtonType = elevio.BT_HallDown
-        netCh.TransmittOrderCh <- order
+        order.Receiver_elev = elevID
 
+        if elevatorMap[elevID].HallOrders[floor][elevio.BT_HallUp]{ //Sender bare RemoveOrder om det er en ordre
+          order.ButtonType = elevio.BT_HallUp
+          netCh.TransmittOrderCh <- order
+        }
 
+        if elevatorMap[elevID].HallOrders[floor][elevio.BT_HallDown]{ //Sender bare RemoveOrder om det er en ordre
+          order.ButtonType = elevio.BT_HallDown
+          netCh.TransmittOrderCh <- order
+        }
+
+        if elevatorMap[elevID].CabOrders[floor]{ //Sender bare RemoveOrder om det er en ordre
+          order.ButtonType = elevio.BT_Cab
+          netCh.TransmittOrderCh <- order
+        }
     }
   }
 }
@@ -100,7 +111,12 @@ func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, e
       }*/
       //hvis melding kommer fra master skal den merkes med Approved og sendes tilbake.
       //hvis melding kommer til master skal den 1. hvis approved: LAGRES 2. hvis ikke approved, sendes rett ut igjen
-      elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] = receivedOrder.Should_add
+      if receivedOrder.ButtonType == elevio.BT_Cab{
+        elevatorMap[receivedOrder.Receiver_elev].CabOrders[receivedOrder.Floor] = receivedOrder.Should_add
+      }else{
+        elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] = receivedOrder.Should_add
+      }
+
       fsmCh.LightUpdateCh <- true
       go func(){fsmCh.New_state <- *elevatorMap[elevID]}()
 
@@ -109,7 +125,7 @@ func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, e
       //elevcontroller.PrintElevator(elevator)
       if elevator.ElevID != elevID{
         *elevatorMap[elevator.ElevID] = elevator
-        fmt.Println("MOTTAT HEIS:")
+        fmt.Println("MOTTATT HEIS:")
         elevcontroller.PrintElevator(*elevatorMap[elevator.ElevID])
         fsmCh.LightUpdateCh <- true
       }
