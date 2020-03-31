@@ -84,13 +84,15 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
 
 			default:
+
+				//DENNE KAN VEL KANSKJE BARE FJERNES?? VIL EGENTLIG AT CURRENT_DIR ALDRI SETTES I STOPP!
 				if elevatorMap[elevID].CurrentDir == elevio.MD_Stop{
 					fmt.Println("stopping at floor in ACTIVE")
 
 					elevio.SetDoorOpenLamp(true)
 					ch.Open_door <- true
 					elevio.SetMotorDirection(elevio.MD_Stop)
-					elevatorMap[elevID].CurrentDir = elevio.MD_Stop
+					//elevatorMap[elevID].CurrentDir = elevio.MD_Stop
 					elevatorMap[elevID].CurrentState = config.DOOR_OPEN
 					
 					go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!

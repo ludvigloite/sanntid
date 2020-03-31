@@ -104,8 +104,11 @@ func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, e
 
     case elevator := <-ch.ReceiveElevStateCh:
       fmt.Println("Mottatt ny elevState")
-      elevcontroller.PrintElevator(elevator)
-      *elevatorMap[elevator.ElevID] = elevator //DENNE FUNKER IKKE. BLIR IKKE LAGT TIL GLOBALT!!
+      //elevcontroller.PrintElevator(elevator)
+      *elevatorMap[elevator.ElevID] = elevator
+      fmt.Println("HEIS fra RECEIVE ELEV STATE:")
+      fmt.Println(elevatorMap)
+      elevcontroller.PrintElevator(*elevatorMap[elevator.ElevID])
 
     case newCurrentOrder := <-ch.ReceiveCurrentOrderCh:
       fmt.Println("Mottatt ny currentOrder")

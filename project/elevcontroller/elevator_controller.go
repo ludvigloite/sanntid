@@ -5,7 +5,7 @@ import(
 	//"../orderhandler"
 	"../config"
 	"fmt"
-	//"time"
+	"time"
 	//"math/rand"
 )
 
@@ -194,6 +194,28 @@ func PrintElevator(elevator config.Elevator){
 		fmt.Println()
 	}
 	fmt.Println()
+}
+
+func PrintElevators_withTime(elevatorMap map[int]*config.Elevator){
+	for{
+		for _, elevator := range elevatorMap{
+			fmt.Println()
+			fmt.Println("elevID: ",elevator.ElevID,"\t Rank: ",elevator.ElevRank)
+			fmt.Println("CurrentOrder = Floor: ",elevator.CurrentOrder.Floor, "\t ButtonType: ",elevator.CurrentOrder.ButtonType)
+			fmt.Println("CurrentFloor = ", elevator.CurrentFloor)
+			fmt.Println("CurrentState = ", elevator.CurrentState)
+			fmt.Println("Hallorders   = ")
+			for i := 0; i< config.NUM_FLOORS;i++{
+				for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
+					fmt.Print(elevator.HallOrders[i][j],"\t")
+				}
+				fmt.Println()
+			}
+			fmt.Println()
+			time.Sleep(300*time.Millisecond)
+		}
+		time.Sleep(10*time.Second)
+	}
 }
 
 func GetDirection(elevator config.Elevator) elevio.MotorDirection{

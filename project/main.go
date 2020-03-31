@@ -2,7 +2,7 @@ package main
 
 import(
     "./fsm"
-    //"./elevcontroller"
+    "./elevcontroller"
     "./config"
     "./elevio"
     "./timer"
@@ -124,6 +124,8 @@ func main(){
     go network.Sender(fsmChannels, networkChannels, elevID, elevatorMap)
     go network.Receiver(networkChannels,fsmChannels, elevID, elevatorMap, activeElevators)
     go arbitrator.Arbitrator(fsmChannels, elevID, elevatorMap)
+
+    go elevcontroller.PrintElevators_withTime(elevatorMap)
 
 
     fsm.RunElevator(fsmChannels, elevID, elevatorMap, activeElevators, &elevator) //kjøre som go?
