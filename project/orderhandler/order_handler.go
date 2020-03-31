@@ -12,10 +12,10 @@ package orderhandler
 import(
 	"../elevio"
 	"../config"
-	"fmt"
+	//"fmt"
 )
 
-
+/*
 var elevatorID int //kan byttes underveis
 var elevatorRank int //bytter underveis
 var isMaster = false
@@ -29,20 +29,22 @@ var hallOrderQueue = &[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int{} //inneho
 //nullte element er opp, første element er ned.
 
 
-
 type CabOrders struct{
 	ElevID int //hvilken elevator cab callsa tilhører
 	Active [config.NUM_FLOORS]int //hvilke av de fire knappene som er aktive // !!!! -1:inaktiv, 0:aktiv 2:executing?
 }
-/*
+
 type Order struct{
 	Floor int
 	ButtonType int
-}*/
+}
 
 var cabOrderQueue = &CabOrders{}//variabelen som kan endres på
 
 var elevatorList = &[config.NUM_ELEVATORS] config.Elevator{}
+*/
+
+
 
 /* LIGGER I CONFIG
 type Elevator struct{
@@ -54,18 +56,22 @@ type Elevator struct{
 }
 */
 
+/*
 var currentOrderList = &[config.NUM_ELEVATORS] config.Order{}
 var currentFloorList = &[config.NUM_ELEVATORS] int{}
+*/
 
 
+/*
 func IsMaster()bool{
 	if elevatorRank == 1{
 		return true
 	}
 	return false
 }
+*/
 
-
+/*
 func AddNewCurrentOrder(elevID int, current_order config.Order){ //evt bytte ut int med en Ordre? Tror egt vi bare trenger FloorNr, men er kanskje mer leselig om man tar med hele order.
 	elevList := *elevatorList
 	if elevList[elevID-1].ElevID == elevID{
@@ -86,11 +92,11 @@ func UpdateCurrentFloor(elevID int, current_floor int){
 	}else{
 		fmt.Println("NOE ER FEIL I UpdateCurrentFloor()")
 	}
-}
+}*/
 
 
 
-
+/*
 func SetElevatorRank(rank int){elevatorRank = rank}
 func SetElevatorID(ID int){elevatorID = ID}
 func SetCurrentFloor(floor int){currentFloor = floor}
@@ -110,14 +116,14 @@ func GetCurrentOrderList()[config.NUM_ELEVATORS] config.Order{return *currentOrd
 func GetCurrentFloorList()[config.NUM_ELEVATORS] int{return *currentFloorList}
 func GetElevList() [config.NUM_ELEVATORS] config.Elevator{return *elevatorList}
 
+*/
 
-
-
+/*
 func InitQueues(){
 	InitCabQueue(cabOrderQueue)
 	InitHallQueue(hallOrderQueue)
 	//InitCurrentOrderFloorLists(currentOrderList,currentFloorList)
-}
+}*/
 
 /*
 func InitElevList(elevList *[config.NUM_ELEVATORS] Elevator){ //Trenger kanskje ikke initialisere?
@@ -133,7 +139,7 @@ func InitElevList(elevList *[config.NUM_ELEVATORS] Elevator){ //Trenger kanskje 
 	}
 }*/
 
-
+/*
 func InitHallQueue(queue *[config.NUM_FLOORS][config.NUM_HALLBUTTONS] int){
 	for i := 0; i < config.NUM_FLOORS; i++{
 		for j := 0; j < config.NUM_HALLBUTTONS; j++{
@@ -157,6 +163,7 @@ func InitCurrentOrderFloorLists(orderList *[config.NUM_ELEVATORS] config.Order, 
 		floorList[i] = -1
 	}
 }
+*/
 
 /*
 func GetDirection(currentFloor int, currentOrder int) int{
@@ -172,7 +179,7 @@ func GetDirection(currentFloor int, currentOrder int) int{
 }*/
 
 
-
+/*
 func GetNewOrder(elevCurrentFloor int, elevID int) config.Order{ //returnerer en ordre med floor: -1 om det ikke er noen ordre.
 	newOrder := config.Order{}
 	if elevCurrentFloor == -1{
@@ -221,7 +228,7 @@ func AddOrder(floor int, buttonType int, elevatorID int){ //elevatorID er 0 om d
 	//UpdateLights()
 }
 
-
+*/
 /*
 func IsThereOrder(floor int, buttonType int, elevID int) bool{ //buttontype: 0=opp 1=ned 2=cabOrder //kan kanskje bare implementeres i ShouldStopAtFloor //kan kanskje fjerne elevID og heller bruke global variabel
 	if buttonType == 2{
@@ -259,14 +266,15 @@ func ShouldStopAtFloor(currentFloor int, currentOrder int, elevID int) bool{
 */
 
 func ClearCurrentFloor(elevator *config.Elevator){
-	currentFloor = *elevator.CurrentFloor
+	currentFloor := elevator.CurrentFloor
 
-	*elevator.HallOrders[currentFloor][config.BT_HallDown] = false
-	*elevator.HallOrders[currentFloor][config.BT_HallUp] = false
-	*elevator.CabOrders[currentFloor] = false
+	elevator.HallOrders[currentFloor][elevio.BT_HallDown] = false
+	elevator.HallOrders[currentFloor][elevio.BT_HallUp] = false
+	elevator.CabOrders[currentFloor] = false
 }
 
-func LightUpdater(LightUpdateCh <-chan bool){
+/*
+func LightUpdater(LightUpdateCh <-chan bool, elevatorMap map[int]*config.Elevator){ //DENNE MÅ ENDRES SLIK AT DEN BARE ENDRER LYS OM DET FAKTISK ER EN ENDRING!!
 	for{
 		select{
 		case <-LightUpdateCh:
@@ -298,6 +306,7 @@ func LightUpdater(LightUpdateCh <-chan bool){
 		}
 	}
 }
+*/
 
 /*
 func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres mer effektiv. NumHallButtons er jo bare 2..Evt lage en funskjon for hall-lights og en for cab-lights
@@ -327,8 +336,7 @@ func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres 
 	}
 }
 */
-
-
+/*
 func MergeHallQueues(elev2 config.Packet){
 
 	for i := 0; i < config.NUM_FLOORS; i++{
@@ -378,7 +386,7 @@ func PrintHallOrderQueue(hallOrderQueue [config.NUM_FLOORS][config.NUM_HALLBUTTO
 	}
 	fmt.Print("\n")
 }
-
+*/
 
 
 

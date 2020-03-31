@@ -2,14 +2,15 @@ package main
 
 import(
     "./fsm"
-    "./elevcontroller"
+    //"./elevcontroller"
     "./config"
     "./elevio"
     "./timer"
-    "./orderhandler"
+    //"./orderhandler"
     "./network/peers"
     "./network/bcast"
     "./arbitrator"
+    "./network"
     //"./orderhandler"
     "strconv"
     "fmt"
@@ -50,6 +51,33 @@ func main(){
 
     //var elevatorList = &[config.NUM_ELEVATORS] config.Elevator{}
     elevatorMap := make(map[int]*config.Elevator)
+    activeElevators := make(map[int]bool) //activeElevators[elevID] = false/true)
+    //kanskje må disse initialiseres til at alle er unactive. De vil få riktig konfig med en gang de får første beskjeden om hvilke som er active.
+
+    elevator := config.Elevator{
+        Active: false,
+        ElevID: elevID,
+        ElevRank: -1, //Dette fikses ved at man sjekker hvor mange heiser som er online.
+        CurrentOrder: config.Order{Floor:-1, ButtonType:-1}, //usikker på om denne initialiseringen funker.
+        CurrentFloor: -1,
+        CurrentDir: elevio.MD_Down,
+        CurrentState: config.IDLE,
+        CabOrders: [config.NUM_FLOORS]bool{},
+        HallOrders: [config.NUM_FLOORS][config.NUM_HALLBUTTONS]bool{},
+    }
+    firstElevator := elevator
+    firstElevator.ElevID = 1
+    elevatorMap[1] = &firstElevator
+    secondElevator := elevator
+    secondElevator.ElevID = 2
+    elevatorMap[2] = &secondElevator
+    thirdElevator := elevator
+    thirdElevator.ElevID = 3
+    elevatorMap[3] = &thirdElevator
+
+    elevatorMap[elevID] = &elevator
+
+    fmt.Println(elevatorMap[1].ElevID,elevatorMap[2].ElevID,elevatorMap[3].ElevID)
 
 
     fsmChannels := config.FSMChannels{
@@ -83,19 +111,20 @@ func main(){
     go bcast.Transmitter(config.BROADCAST_ELEV_STATE_PORT, networkChannels.TransmittElevStateCh)
     go bcast.Receiver(config.BROADCAST_ELEV_STATE_PORT, networkChannels.ReceiveElevStateCh)
 
-    go bcast.Transmitter(config.BROADCAST_ORDER_PORT, networkChannels.TransmittCurrentOrderCh)
-    go bcast.Receiver(config.BROADCAST_ORDER_PORT, networkChannels.ReceiveCurrentOrderCh)
+    go bcast.Transmitter(config.BROADCAST_CURRENT_ORDER_PORT, networkChannels.TransmittCurrentOrderCh)
+    go bcast.Receiver(config.BROADCAST_CURRENT_ORDER_PORT, networkChannels.ReceiveCurrentOrderCh)
 
 
     go elevio.PollButtons(fsmChannels.Drv_buttons)
     go elevio.PollFloorSensor(fsmChannels.Drv_floors)
     go timer.DoorTimer(fsmChannels.Close_door,fsmChannels.Open_door,config.DOOR_OPEN_TIME) //Legg true på open_door når dør skal åpnes //skrives true til close_door når tiden er ute
-    go elevcontroller.CheckAndAddOrder(fsmChannels,networkChannels)
-    go orderhandler.LightUpdater(fsmChannels.LightUpdateCh)
+    //go elevcontroller.CheckAndAddOrder(fsmChannels,networkChannels)
+    //go orderhandler.LightUpdater(fsmChannels.LightUpdateCh)
 
-    go Sender(fsmChannels, networkChannels, elevID, elevatorMap)
-    go Receiver(networkChannels, elevID, elevatorMap)
-    go arbitrator.Arbitrator(networkChannels, elevID, elevatorMap)
+    go network.Sender(fsmChannels, networkChannels, elevID, elevatorMap)
+    go network.Receiver(networkChannels,fsmChannels, elevID, elevatorMap, activeElevators)
+    go arbitrator.Arbitrator(fsmChannels, elevID, elevatorMap)
 
-    fsm.RunElevator(fsmChannels, elevID, elevatorMap) //kjøre som go?
+
+    fsm.RunElevator(fsmChannels, elevID, elevatorMap, activeElevators, &elevator) //kjøre som go?
 }

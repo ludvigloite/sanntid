@@ -49,7 +49,7 @@ type Order struct{
 	Sender_elev_ID 		int
 	Sender_elev_rank 	int
 	Floor 				int
-	ButtonType 			config.ButtonType
+	ButtonType 			elevio.ButtonType
 	Should_add			bool //-1 hvis ordre skal slettes, 1 hvis ordre blir lagt til.
 	Packet_id 			int
 	Approved 			bool
@@ -105,7 +105,7 @@ type FSMChannels struct {
 }
 
 type NetworkChannels struct{
-	PeerUpdatAeCh 			chan peers.PeerUpdate
+	PeerUpdateCh 			chan peers.PeerUpdate
 	PeerTxEnable 			chan bool
 	TransmittOrderCh 		chan Order
 	ReceiveOrderCh 			chan Order

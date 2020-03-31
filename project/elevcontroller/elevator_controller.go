@@ -2,30 +2,30 @@ package elevcontroller
 
 import(
 	"../elevio"
-	"../orderhandler"
+	//"../orderhandler"
 	"../config"
 	"fmt"
-	"time"
-	"math/rand"
+	//"time"
+	//"math/rand"
 )
 
 
 func Initialize(elevator *config.Elevator){
 	elevio.SetMotorDirection(elevio.MD_Down)
-	elevcontroller.ResetLights()	
-	InitQueues(&elevator)
+	ResetLights()	
+	InitQueues(elevator)
 }
 
 func InitQueues(elevator *config.Elevator){
 	for i := 0;i < config.NUM_FLOORS; i++ {
-		*elevator.CabOrders[i] = false //INIT CABORDERS
+		elevator.CabOrders[i] = false //INIT CABORDERS
 
 		for j := elevio.BT_HallUp; j< config.NUM_HALLBUTTONS; j++{
-			*elevator.HallOrders[i][j] = false //INIT HALLORDERS
+			elevator.HallOrders[i][j] = false //INIT HALLORDERS
 		}
 	}
 }
-
+/*
 func CheckAndAddOrder(fsmCh config.FSMChannels, netCh config.NetworkChannels){
 	//KJØRES SOM GOROUNTINE
 	order := config.Order{}
@@ -118,8 +118,10 @@ func CheckAndAddOrder(fsmCh config.FSMChannels, netCh config.NetworkChannels){
 
 		}
 	}
-}
+}*/
 
+/*
+//DENNE LIGGER NÅ I ARBITRATOR FOLDER!
 func Arbitrator(ch config.NetworkChannels){ //kjøres bare av Master. Master kan bytte underveis. Derfor må det sjekkes hver gang og den må være inni while-loopen // KJØRES SOM GOROUNTINE
 	elevList := orderhandler.GetElevList()
 	order := config.Order{}
@@ -159,6 +161,7 @@ func Arbitrator(ch config.NetworkChannels){ //kjøres bare av Master. Master kan
 	}
 
 }
+*/
 
 
 //Kan vel kanskje i stedet bare fjerne alle ordre og så kjøre update lights??
@@ -183,6 +186,14 @@ func PrintElevator(elevator config.Elevator){
 	fmt.Println("CurrentOrder = Floor: ",elevator.CurrentOrder.Floor, "\t ButtonType: ",elevator.CurrentOrder.ButtonType)
 	fmt.Println("CurrentFloor = ", elevator.CurrentFloor)
 	fmt.Println("CurrentState = ", elevator.CurrentState)
+	fmt.Println("Hallorders   = ")
+	for i := 0; i< config.NUM_FLOORS;i++{
+		for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
+			fmt.Print(elevator.HallOrders[i][j],"\t")
+		}
+		fmt.Println()
+	}
+	fmt.Println()
 }
 
 func GetDirection(elevator config.Elevator) elevio.MotorDirection{
@@ -206,16 +217,16 @@ func ShouldStopAtFloor(elevator config.Elevator) bool{
 	if currentFloor == destinationFloor{
 		return true
 	}
-	if dir == MD_Stop{ //har ingen ordre eller er på etasjen currentOrder tilsier. KAN FØRE TIL ERROR!!
+	if dir == elevio.MD_Stop{ //har ingen ordre eller er på etasjen currentOrder tilsier. KAN FØRE TIL ERROR!!
 		return true
 	}
 	if elevator.CabOrders[currentFloor]{ //Det er en cab order i denne etasjen
 		return true
 	}
-	if elevator.HallOrders[currentFloor][BT_HallUp] && dir == MD_Up{ //retning til heis er opp og det er en ordre opp
+	if elevator.HallOrders[currentFloor][elevio.BT_HallUp] && dir == elevio.MD_Up{ //retning til heis er opp og det er en ordre opp
 		return true
 	}
-	if elevator.HallOrders[currentFloor][BT_HallDown] && dir == MD_Down { //retning til heis er ned og det er en ordre ned
+	if elevator.HallOrders[currentFloor][elevio.BT_HallDown] && dir == elevio.MD_Down { //retning til heis er ned og det er en ordre ned
 		return true
 	}
 	return false
@@ -258,7 +269,7 @@ func TestReceiver(ch config.NetworkChannels){
 	}
 }
 
-
+/*
 func SendMsg(TransmitterCh chan <- config.Packet){
 	Msg := config.Packet{}
 	for{
@@ -272,7 +283,7 @@ func SendMsg(TransmitterCh chan <- config.Packet){
 		time.Sleep(1*time.Second)
 	}
 }
-
+*/
 /*func SendMsg(TransmitterCh chan <- config.Packet, NewOrderCh ){ //send bare hvis du har fått inn en ny ordre. Ellers sender man hvert x sekund
 	Msg := config.Packet{}
 	for{
