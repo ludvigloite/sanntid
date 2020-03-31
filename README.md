@@ -4,6 +4,19 @@
 3. Gjøre koden mye penere. Få all order_managment til å bare skje inne i order_managment modulen. Altså ikke bruk order.func(order.GetX(),order.GetY())
 4. Fikse nettverk
 
+## NYTTIG
+1. Kill eldste prosess fra sanntids-PC
+```bash
+$ pkill -o -u ludvig sshd
+```
+2. Fra Mac:
+```bash
+$ osascript sanntid_terminal_opener.scpt
+```
+3. Fra remote:
+```bash
+$ ./open_files.sh
+```
 
 
 ## For å kjøre ElevatorDriver
