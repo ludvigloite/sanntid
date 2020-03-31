@@ -6,7 +6,7 @@ import(
     "./config"
     "./elevio"
     "./timer"
-    //"./orderhandler"
+    "./orderhandler"
     "./network/peers"
     "./network/bcast"
     "./arbitrator"
@@ -118,14 +118,13 @@ func main(){
     go elevio.PollButtons(fsmChannels.Drv_buttons)
     go elevio.PollFloorSensor(fsmChannels.Drv_floors)
     go timer.DoorTimer(fsmChannels.Close_door,fsmChannels.Open_door,config.DOOR_OPEN_TIME) //Legg true på open_door når dør skal åpnes //skrives true til close_door når tiden er ute
-    //go elevcontroller.CheckAndAddOrder(fsmChannels,networkChannels)
-    //go orderhandler.LightUpdater(fsmChannels.LightUpdateCh)
+    go orderhandler.LightUpdater(fsmChannels.LightUpdateCh, elevatorMap, elevID)
 
     go network.Sender(fsmChannels, networkChannels, elevID, elevatorMap)
     go network.Receiver(networkChannels,fsmChannels, elevID, elevatorMap, activeElevators)
     go arbitrator.Arbitrator(fsmChannels, elevID, elevatorMap)
 
-    go elevcontroller.PrintElevators_withTime(elevatorMap)
+    //go elevcontroller.PrintElevators_withTime(elevatorMap)
 
 
     fsm.RunElevator(fsmChannels, elevID, elevatorMap, activeElevators, &elevator) //kjøre som go?

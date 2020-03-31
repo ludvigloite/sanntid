@@ -2,7 +2,7 @@ package network
 
 import (
   "../config"
-  //"../elevio"
+  "../elevio"
   "fmt"
   "math/rand"
   "strconv"
@@ -28,14 +28,14 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
         //order.Approved = false
 
         netCh.TransmittOrderCh <- order
-        fmt.Println("Har nå sendt avgårde pakke om at knapp er trykket!")
+        //fmt.Println("Har nå sendt avgårde pakke om at knapp er trykket!")
 
         
 
       case newState := <-fsmCh.New_state: //her må det opprettes ny intern channel. denne skal skrives Elevator til når det er en ny endring. Denne skal også sendes med en gang en heis går online.
         //newState er en Elevator Struct.
         netCh.TransmittElevStateCh <- newState
-        fmt.Println("Sendt ny Elevstate ut")
+        //fmt.Println("Sendt ny Elevstate ut")
 
       case newCurrentOrder := <- fsmCh.New_current_order:
         //newCurrentOrder er en Order struct.
@@ -46,10 +46,13 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
         order.Sender_elev_rank = elevatorMap[elevID].ElevRank
         order.Floor = floor
         order.Packet_id = rand.Intn(10000)
+        order.ButtonType = elevio.BT_HallUp
         order.Should_add = false //Det er en ordre som skal legges til
-        //order.Approved = false
-
         netCh.TransmittOrderCh <- order
+        order.ButtonType = elevio.BT_HallDown
+        netCh.TransmittOrderCh <- order
+
+
     }
   }
 }
@@ -97,18 +100,19 @@ func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, e
       }*/
       //hvis melding kommer fra master skal den merkes med Approved og sendes tilbake.
       //hvis melding kommer til master skal den 1. hvis approved: LAGRES 2. hvis ikke approved, sendes rett ut igjen
-      fmt.Println("Mottar melding om ny ordre")
       elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] = receivedOrder.Should_add
+      fsmCh.LightUpdateCh <- true
       go func(){fsmCh.New_state <- *elevatorMap[elevID]}()
 
 
     case elevator := <-ch.ReceiveElevStateCh:
-      fmt.Println("Mottatt ny elevState")
       //elevcontroller.PrintElevator(elevator)
-      *elevatorMap[elevator.ElevID] = elevator
-      fmt.Println("HEIS fra RECEIVE ELEV STATE:")
-      fmt.Println(elevatorMap)
-      elevcontroller.PrintElevator(*elevatorMap[elevator.ElevID])
+      if elevator.ElevID != elevID{
+        *elevatorMap[elevator.ElevID] = elevator
+        fmt.Println("MOTTAT HEIS:")
+        elevcontroller.PrintElevator(*elevatorMap[elevator.ElevID])
+        fsmCh.LightUpdateCh <- true
+      }
 
     case newCurrentOrder := <-ch.ReceiveCurrentOrderCh:
       fmt.Println("Mottatt ny currentOrder")

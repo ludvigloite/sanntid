@@ -13,6 +13,30 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 	newOrder.Sender_elev_ID = masterElev
 	newOrder.Sender_elev_rank = 1
 	newOrder.Receiver_elev = currentElev
+	newOrder.Floor = -1
+	newOrder.ButtonType = elevio.BT_HallDown
+
+	currentFloor := elevator.CurrentFloor
+	if currentFloor == -1{
+		return newOrder
+	}
+
+	if elevator.CabOrders[currentFloor]{
+		newOrder.Floor = currentFloor
+		newOrder.ButtonType = elevio.BT_Cab
+		return newOrder
+	}
+	if elevator.HallOrders[currentFloor][elevio.BT_HallUp]{
+		newOrder.Floor = currentFloor
+		newOrder.ButtonType = elevio.BT_HallUp
+		return newOrder
+	}
+	if elevator.HallOrders[currentFloor][elevio.BT_HallDown]{
+		newOrder.Floor = currentFloor
+		newOrder.ButtonType = elevio.BT_HallDown
+		return newOrder
+	}
+
 	
 	if elevator.CurrentDir == elevio.MD_Up{
 		if elevator.CabOrders[3]{ //sjekker om det er en caborder i 4 etasje!
@@ -45,20 +69,20 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 		}
 	}else{ //DEN GÅR NEDOVER!
 		if elevator.CabOrders[0]{ //sjekker om det er en caborder i 1 etasje!
-			fmt.Println("Det er en caborder")
+			//fmt.Println("Det er en caborder")
 			newOrder.Floor = 0
 			newOrder.ButtonType = elevio.BT_Cab
 			return newOrder
 		}
 		for i := 1; i < config.NUM_FLOORS; i++{ //går fra 2 etasje til 4 etasje
 			if elevator.CabOrders[i]{
-				fmt.Println("Det er en caborder")
+				//fmt.Println("Det er en caborder")
 				newOrder.Floor = i
 				newOrder.ButtonType = elevio.BT_Cab
 				return newOrder
 			}
 			if elevator.HallOrders[i][elevio.BT_HallDown]{
-				fmt.Println("Det er en ordre på NED knapp")
+				//fmt.Println("Det er en ordre på NED knapp")
 				if !AnotherGoingToFloor(i, elevatorMap){
 					newOrder.Floor = i
 					newOrder.ButtonType = elevio.BT_HallDown
@@ -68,7 +92,7 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 		}
 		for i := config.NUM_FLOORS-2; i > -1; i--{ //går fra 3 etasje til 1 etasje. Øverste etasje kan ikke ha opp-knapp!
 			if elevator.HallOrders[i][elevio.BT_HallUp]{
-				fmt.Println("Det er en ordre på OPP knapp")
+				//fmt.Println("Det er en ordre på OPP knapp")
 				if !AnotherGoingToFloor(i,elevatorMap){
 					newOrder.Floor = i
 					newOrder.ButtonType = elevio.BT_HallUp
@@ -79,8 +103,6 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 		}
 	}
 	
-	newOrder.Floor = -1
-	newOrder.ButtonType = elevio.BT_HallDown
 	return newOrder
 }
 

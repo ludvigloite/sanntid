@@ -222,6 +222,7 @@ func GetDirection(elevator config.Elevator) elevio.MotorDirection{
 	currentFloor := elevator.CurrentFloor
 	destinationFloor := elevator.CurrentOrder.Floor
 	if destinationFloor == -1 || destinationFloor == currentFloor { //enten har den ikke noen retning, eller så er den på riktig floor
+		fmt.Print("\n\n\n\n SETTER DIRECTION TIL STOPP!! \n\n\n\n")
 		return elevio.MD_Stop
 
 	} else if currentFloor < destinationFloor { //heisen er lavere enn sin destinasjon -> kjører oppover

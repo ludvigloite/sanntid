@@ -12,7 +12,7 @@ package orderhandler
 import(
 	"../elevio"
 	"../config"
-	//"fmt"
+	"fmt"
 )
 
 /*
@@ -271,42 +271,31 @@ func ClearCurrentFloor(elevator *config.Elevator){
 	elevator.HallOrders[currentFloor][elevio.BT_HallDown] = false
 	elevator.HallOrders[currentFloor][elevio.BT_HallUp] = false
 	elevator.CabOrders[currentFloor] = false
+
 }
 
-/*
-func LightUpdater(LightUpdateCh <-chan bool, elevatorMap map[int]*config.Elevator){ //DENNE MÅ ENDRES SLIK AT DEN BARE ENDRER LYS OM DET FAKTISK ER EN ENDRING!!
+
+func LightUpdater(LightUpdateCh <-chan bool, elevatorMap map[int]*config.Elevator, elevID int){ //DENNE MÅ ENDRES SLIK AT DEN BARE ENDRER LYS OM DET FAKTISK ER EN ENDRING!!
 	for{
 		select{
-		case <-LightUpdateCh:
+		case <- LightUpdateCh:
 			fmt.Println("Updating Lights...")
 			for i := 0; i < config.NUM_FLOORS; i++{
-				if cabOrderQueue.Active[i] ==-1 {
-					elevio.SetButtonLamp(elevio.BT_Cab, i, false)
-				} else{
-					elevio.SetButtonLamp(elevio.BT_Cab, i, true)
-				}
+				elevio.SetButtonLamp(elevio.BT_Cab, i, elevatorMap[elevID].CabOrders[i])
 
-				for j := 0; j < config.NUM_HALLBUTTONS; j++{
-					if i != 0 && j == 1{ //hvis det ikke er 1 etasje eller 4 etasje.
-						if hallOrderQueue[i][j] == -1{
-							elevio.SetButtonLamp(elevio.BT_HallDown, i, false)
-						} else{
-							elevio.SetButtonLamp(elevio.BT_HallDown, i, true)
-						}
+				for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
+					if i != 0 && j == elevio.BT_HallDown{
+						elevio.SetButtonLamp(elevio.BT_HallDown, i, elevatorMap[elevID].HallOrders[i][elevio.BT_HallDown])
 					}
-					if i != config.NUM_FLOORS && j == 0{
-						if hallOrderQueue[i][j] == -1{
-							elevio.SetButtonLamp(elevio.BT_HallUp, i, false)
-						} else{
-							elevio.SetButtonLamp(elevio.BT_HallUp, i, true)
-						}
+					if i != config.NUM_FLOORS && j == elevio.BT_HallUp{
+						elevio.SetButtonLamp(elevio.BT_HallUp, i, elevatorMap[elevID].HallOrders[i][elevio.BT_HallUp])
 					}
 				}
 			}
 		}
 	}
 }
-*/
+
 
 /*
 func UpdateLights(){ //vet ikke om i og j blir riktig???? //Kan sikkert gjøres mer effektiv. NumHallButtons er jo bare 2..Evt lage en funskjon for hall-lights og en for cab-lights
