@@ -19,21 +19,7 @@ import(
     "time"
 )
 
-////////////////////////////////////////////
-//              TODO
-//  -Nye ordre kommer ikke inn når døra er åpen
-//  -Bruke goroutines og channels
-//  -Fikse nettverk
-//
-//
-//
-//
-//
-///////////////////////////////////////////
-
 func main(){
-
-    //Eventuelt bør det funke å ha portnummer som elevID?
 
     elevIDPtr := flag.Int("elevID",42,"elevator ID")
     portPtr := flag.String("port","","port to connect to Simulator")
@@ -47,11 +33,8 @@ func main(){
 
     elevio.Init("localhost:"+port,config.NUM_FLOORS)
 
-    //elevcontroller.Initialize(elevID, "localhost:"+port)
-
-    //var elevatorList = &[config.NUM_ELEVATORS] config.Elevator{}
     elevatorMap := make(map[int]*config.Elevator)
-    activeElevators := make(map[int]bool) //activeElevators[elevID] = false/true)
+    //activeElevators := make(map[int]bool) //activeElevators[elevID] = false/true)
     //kanskje må disse initialiseres til at alle er unactive. De vil få riktig konfig med en gang de får første beskjeden om hvilke som er active.
 
     elevator := config.Elevator{
@@ -76,8 +59,6 @@ func main(){
     elevatorMap[3] = &thirdElevator
 
     elevatorMap[elevID] = &elevator
-
-    fmt.Println(elevatorMap[1].ElevID,elevatorMap[2].ElevID,elevatorMap[3].ElevID)
 
 
     fsmChannels := config.FSMChannels{
@@ -121,11 +102,11 @@ func main(){
     go orderhandler.LightUpdater(fsmChannels.LightUpdateCh, elevatorMap, elevID)
 
     go network.Sender(fsmChannels, networkChannels, elevID, elevatorMap)
-    go network.Receiver(networkChannels,fsmChannels, elevID, elevatorMap, activeElevators)
+    go network.Receiver(networkChannels,fsmChannels, elevID, elevatorMap)
     go arbitrator.Arbitrator(fsmChannels, elevID, elevatorMap)
 
     //go elevcontroller.PrintElevators_withTime(elevatorMap)
 
 
-    fsm.RunElevator(fsmChannels, elevID, elevatorMap, activeElevators, &elevator) //kjøre som go?
+    fsm.RunElevator(fsmChannels, elevID, elevatorMap, &elevator) //kjøre som go?
 }

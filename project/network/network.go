@@ -6,7 +6,7 @@ import (
   "fmt"
   "math/rand"
   "strconv"
-  "../elevcontroller"
+  //"../elevcontroller"
   
 )
 
@@ -18,7 +18,7 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
     select{
       case buttonPress := <- fsmCh.Drv_buttons: //Fått inn knappetrykk
         
-        fmt.Println("Knapp er trykket! Floor: ", buttonPress.Floor," buttonType: ", buttonPress.Button)
+        //fmt.Println("Knapp er trykket! Floor: ", buttonPress.Floor," buttonType: ", buttonPress.Button)
         
         order.Sender_elev_rank = elevatorMap[elevID].ElevRank
         order.Floor = buttonPress.Floor
@@ -26,14 +26,13 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
         order.Packet_id = rand.Intn(10000)
         order.Should_add = true //Det er en ordre som skal legges til
         order.Receiver_elev = elevID
-        //order.Approved = false
 
         netCh.TransmittOrderCh <- order
         //fmt.Println("Har nå sendt avgårde pakke om at knapp er trykket!")
 
         
 
-      case newState := <-fsmCh.New_state: //her må det opprettes ny intern channel. denne skal skrives Elevator til når det er en ny endring. Denne skal også sendes med en gang en heis går online.
+      case newState := <-fsmCh.New_state:
         //newState er en Elevator Struct.
         netCh.TransmittElevStateCh <- newState
         //fmt.Println("Sendt ny Elevstate ut")
@@ -47,7 +46,7 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
         order.Sender_elev_rank = elevatorMap[elevID].ElevRank
         order.Floor = floor
         order.Packet_id = rand.Intn(10000)
-        order.Should_add = false //Det er en ordre som skal legges til
+        order.Should_add = false //Det er en ordre som skal fjernes
         order.Receiver_elev = elevID
 
         if elevatorMap[elevID].HallOrders[floor][elevio.BT_HallUp]{ //Sender bare RemoveOrder om det er en ordre
@@ -68,9 +67,28 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
   }
 }
 
+func SendCabOrdersWhenComeback(netCh config.NetworkChannels, elevatorMap map[int]*config.Elevator, comebackElev int, senderElev int, cabOrdersBackup map[int][config.NUM_FLOORS]bool){
+  order := config.Order{}
+  order.Sender_elev_ID = senderElev
+  order.Sender_elev_rank = elevatorMap[senderElev].ElevRank
+  order.ButtonType = elevio.BT_Cab
+  order.Packet_id = rand.Intn(10000)
+  order.Should_add = true //Det er en ordre som skal legges til
+  order.Receiver_elev = comebackElev
+
+  for i := 0; i < config.NUM_FLOORS; i++{
+    if cabOrdersBackup[comebackElev][i]{
+      order.Floor = i
+      netCh.TransmittOrderCh <- order
+    }
+  }
+}
 
 
-func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator, activeElevators map[int]bool){
+
+func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator){
+
+  cabOrdersBackup := make(map[int][config.NUM_FLOORS]bool)
 
   for{
     select{
@@ -81,28 +99,31 @@ func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, e
       fmt.Printf("  Lost:     %q\n", p.Lost)
 
       //HAR DET KOMMET NOEN FLERE ELEVATORS TIL?
-
-
       for _, peerStr := range p.Peers{
-        fmt.Println(peerStr)
         peerInt, _ := strconv.Atoi(peerStr)
-        fmt.Println(peerInt)
         elevatorMap[peerInt].Active = true
-        activeElevators[peerInt] = true
+        fsmCh.New_state <- *elevatorMap[elevID] //om det kommer noen nye må du sende ut deg selv sånn at de kan legge deg til!
+        SendCabOrdersWhenComeback(ch, elevatorMap, peerInt, elevID, cabOrdersBackup)
+        //Send dine hall_orders og lagrede Cab orders!
       }
     
+
       //HAR VI MISTET NOEN ELEVATORS?
       if len(p.Lost) > 0{
         for _, peerStr := range p.Lost{
           peerInt, _ := strconv.Atoi(peerStr)
           elevatorMap[peerInt].Active = false
-          activeElevators[peerInt] = false
+          cabOrdersBackup[peerInt] = elevatorMap[peerInt].CabOrders
+          elevatorMap[peerInt].CurrentOrder.Floor = -1
+
+          if elevatorMap[peerInt].ElevRank == 1{ //MASTER FIKSING
+            elevatorMap[peerInt].ElevRank = 3
+            elevatorMap[elevID].ElevRank --
+            fmt.Println("Jeg har nå rank ",elevatorMap[elevID].ElevRank)
+          }
         }
       }
 
-      //HVIS MASTER DÆVVER MÅ NOE SPENNENDE SKJE.
-
-      //må jeg sende ut noe på elevState Channel nå??
 
 
     case receivedOrder := <-ch.ReceiveOrderCh:
@@ -111,13 +132,19 @@ func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, e
       }*/
       //hvis melding kommer fra master skal den merkes med Approved og sendes tilbake.
       //hvis melding kommer til master skal den 1. hvis approved: LAGRES 2. hvis ikke approved, sendes rett ut igjen
+      
       if receivedOrder.ButtonType == elevio.BT_Cab{
         elevatorMap[receivedOrder.Receiver_elev].CabOrders[receivedOrder.Floor] = receivedOrder.Should_add
+        if receivedOrder.Receiver_elev == elevID{
+           fsmCh.LightUpdateCh <- true
+        }
       }else{
-        elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] = receivedOrder.Should_add
+        if elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] != receivedOrder.Should_add{
+          elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] = receivedOrder.Should_add
+          fsmCh.LightUpdateCh <- true
+        }
       }
 
-      fsmCh.LightUpdateCh <- true
       go func(){fsmCh.New_state <- *elevatorMap[elevID]}()
 
 
@@ -125,14 +152,14 @@ func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, e
       //elevcontroller.PrintElevator(elevator)
       if elevator.ElevID != elevID{
         *elevatorMap[elevator.ElevID] = elevator
-        fmt.Println("MOTTATT HEIS:")
-        elevcontroller.PrintElevator(*elevatorMap[elevator.ElevID])
+        //fmt.Println("MOTTATT HEIS:")
+        //elevcontroller.PrintElevator(*elevatorMap[elevator.ElevID])
         fsmCh.LightUpdateCh <- true
       }
 
     case newCurrentOrder := <-ch.ReceiveCurrentOrderCh:
-      fmt.Println("Mottatt ny currentOrder")
-      fmt.Println(newCurrentOrder)
+      //fmt.Println("Mottatt ny currentOrder")
+      //fmt.Println(newCurrentOrder)
       elevatorMap[newCurrentOrder.Receiver_elev].CurrentOrder = newCurrentOrder
     }
   }

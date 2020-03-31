@@ -10,10 +10,9 @@ import(
 
 
 
-func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator, activeElevators map[int]bool, elevator *config.Elevator){
+func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator, elevator *config.Elevator){
 	
     /* 		INIT 	*/
-    NuActiveElevators := 0
 
 	elevcontroller.Initialize(elevator)
 
@@ -22,39 +21,37 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 		floor = <- ch.Drv_floors
 	}
 
-    for _, result := range activeElevators{
-
-    	if result == true{
-    		NuActiveElevators++
-    	}
-    }
+	NuActiveElevators := 0
+	
+	for _, elevator := range elevatorMap{
+		if elevator.Active{
+			NuActiveElevators++
+		}
+	}
+	
 
     elevator.Active = true
     elevator.ElevRank = NuActiveElevators
+    fmt.Println("JEG HAR RANK ",elevator.ElevRank)
 
 	elevio.SetMotorDirection(elevio.MD_Stop)
 	elevio.SetFloorIndicator(floor)
 	elevator.CurrentFloor = floor
-	//elevator.CurrentDir = elevio.MD_Stop
-
-	elevcontroller.PrintElevator(*elevator)
-
-	//elevatorMap[elevID] = &elevator //Denne lokale lista vil oppdateres automatisk!
 	
 	/*		INIT FERDIG		*/
+
+	ch.New_state <- *elevator
 	
 	fmt.Println("Heisen er intialisert og venter i etasje nr ", floor)
 
 	for{
-		//fmt.Println(activeElevators)
 
 		switch elevatorMap[elevID].CurrentState{
 		case config.IDLE:
 			
 			destination := elevatorMap[elevID].CurrentOrder
-			//destination := config.Order{Floor: -1}
 			if destination.Floor != -1{
-				fmt.Println("Jeg har fått en oppgave i etasje ",destination.Floor,"! Denne skal jeg utføre")
+				//fmt.Println("Jeg har fått en oppgave i etasje ",destination.Floor,"! Denne skal jeg utføre")
 
 				elevatorMap[elevID].CurrentDir = elevcontroller.GetDirection(*elevatorMap[elevID]) //kanskje jeg må bruke destination istedet for elevator.CurrentOrder. Ting kan fucke segf om currentorder endres! 
 
@@ -68,11 +65,12 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 		case config.ACTIVE:
 			select{
 			case reachedFloor := <- ch.Drv_floors: //treffet et floor
+				fmt.Println("Passerte etasje ", reachedFloor)
 				elevio.SetFloorIndicator(reachedFloor)
 				elevatorMap[elevID].CurrentFloor = reachedFloor
 
 				if elevcontroller.ShouldStopAtFloor(*elevatorMap[elevID]){
-					fmt.Println("stopping at floor")
+					//fmt.Println("stopping at floor")
 
 					elevio.SetDoorOpenLamp(true)
 					ch.Open_door <- true
@@ -85,20 +83,17 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 
 			default:
 
-				//DENNE KAN VEL KANSKJE BARE FJERNES?? VIL EGENTLIG AT CURRENT_DIR ALDRI SETTES I STOPP!
 				if elevatorMap[elevID].CurrentDir == elevio.MD_Stop{
-					fmt.Println("stopping at floor in ACTIVE")
+					//fmt.Println("stopping at floor I am already in")
 
 					elevio.SetDoorOpenLamp(true)
 					ch.Open_door <- true
 					ch.Stopping_at_floor <- elevatorMap[elevID].CurrentFloor
 
 					elevio.SetMotorDirection(elevio.MD_Stop)
-					//elevatorMap[elevID].CurrentDir = elevio.MD_Stop
 					elevatorMap[elevID].CurrentState = config.DOOR_OPEN
 					
 					go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
-
 				}
 
 			}
@@ -111,27 +106,14 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 	
 				fmt.Println("closing door__")
 				elevio.SetDoorOpenLamp(false) //slår av lys
-				
-				//orderhandler.ClearCurrentFloor(elevatorMap[elevID], ch.New_state)
 
-
-				//ch.LightUpdateCh <- true
-				/*fmt.Println("ER DISSE LIKE???")
-				fmt.Println("1: ",elevatorMap[elevID].CurrentOrder.Floor)
-				fmt.Println("2: ",elevatorMap[elevID].CurrentFloor)
-				*/
+				elevatorMap[elevID].CurrentState = config.IDLE
 
 				if elevatorMap[elevID].CurrentOrder.Floor == elevatorMap[elevID].CurrentFloor{
 					elevatorMap[elevID].CurrentOrder.Floor = -1 //Fjerner currentOrder, siden den har utført den.
-					elevatorMap[elevID].CurrentState = config.IDLE
-					fmt.Println("CurrentORder er fjernet!")
-					
-				}else{
-					//hvis den ikke er ferdig med currentOrder, fortsett i samme retning
-					//elevatorMap[elevID].CurrentDir = elevcontroller.GetDirection(*elevatorMap[elevID])
-					//elevio.SetMotorDirection(elevatorMap[elevID].CurrentDir) 
-					elevatorMap[elevID].CurrentState = config.IDLE
+					//fmt.Println("CurrentOrder er fjernet!")
 				}
+
 				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
 			}
 

@@ -16,7 +16,6 @@ import (
 // Encodes received values from `chans` into type-tagged JSON, then broadcasts
 // it on `port`
 func Transmitter(port int, chans ...interface{}) {
-	fmt.Println("Started transmitting bcast at port ",port)
 	checkArgs(chans...)
 
 	n := 0
@@ -46,7 +45,6 @@ func Transmitter(port int, chans ...interface{}) {
 // Matches type-tagged JSON received on `port` to element types of `chans`, then
 // sends the decoded value on the corresponding channel
 func Receiver(port int, chans ...interface{}) {
-	fmt.Println("Started receiving bcast at port ",port)
 	checkArgs(chans...)
 
 	var buf [1024]byte

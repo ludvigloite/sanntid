@@ -7,13 +7,6 @@ import(
 	"../network/peers"
 )
 
-/* DETTE KAN IKKE HARDKODES
-const(
-	ELEV_ID				= const(os.Args[1])
-	ELEV_RANK			= 1
-)
-*/
-
 const(
 	NUM_FLOORS 			= 4
 	NUM_HALLBUTTONS 	= 2
@@ -74,24 +67,6 @@ type Elevator struct{
 	CabOrders [NUM_FLOORS]bool
 	HallOrders [NUM_FLOORS][NUM_HALLBUTTONS]bool
 }
-
-/*
-type Packet struct {
-	Elev_ID                		int
-	Elev_rank 					int
-	New_order 					Order
-	New_current_order_to_who 	int
-	Timestamp         			int
-	Error_id          			int
-	State             			int //0:Idle, 1: Active, 2: Door_open, 3: UNDEFINED
-	Current_order     			int
-	Message_nr        			int
-	Order_list        			[NUM_FLOORS][NUM_HALLBUTTONS] int
-	Confirmed_orders  			[3][4]int
-	Rank 						int //bytter underveis
-	CurrentFloor 				int //hvilken etasje er heisen i nå. 0 , 1 , 2 , 3
-	CurrentDir 					int //hvilken retning har heisen. -1 , 0 , 1. Kun 0 i spesielle tilfeller. Er -1 / 1 også når den stopper i et floor. Den skal jo tross alt videre i samme retning.
-}*/
 
 type FSMChannels struct {
 	Drv_buttons 		chan elevio.ButtonEvent
