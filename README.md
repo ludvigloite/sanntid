@@ -1,8 +1,21 @@
-# TO DO
-1. Nye ordre kommer ikke inn når døra er åpen
-2. Bruke goroutines og channels istedet for basically C-kode
-3. Gjøre koden mye penere. Få all order_managment til å bare skje inne i order_managment modulen. Altså ikke bruk order.func(order.GetX(),order.GetY())
-4. Fikse nettverk
+# STATUS
+1. Veldig mye funker nå, blant annet overtakelse av Master, CabOrder giveaway om en node kommer tilbake og at en annen heis tar oppgaven om en heis dør.
+2. Trenger å implementere og teste en del til, blant annet motor failure (WATCH DOG)
+3. Simulatoren klikket en del, blant annet ved at bildet viste at heisen sto stille mens den i "realiteten" bevegde seg, og dermed plutselig hoppa et stykke. Usikker på om dette er pga stort program(15 goroutines), dårlig nett for meg, eller dårlig Simulator..
+
+## NYTTIG
+1. Kill eldste prosess fra sanntids-PC
+```bash
+$ pkill -o -u ludvig sshd
+```
+2. Fra Mac:
+```bash
+$ osascript sanntid_terminal_opener.scpt
+```
+3. Fra remote:
+```bash
+$ ./open_files.sh
+```
 
 
 
