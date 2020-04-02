@@ -42,8 +42,8 @@ func InitPacket(packet Packet){
   packet.ID                 = 0
   packet.Timestamp          = 0
   packet.Error_id           = 0
-  packet.State              = 0       
-  packet.Current_order      = 0     
+  packet.State              = 0
+  packet.Current_order      = 0
   packet.Message_nr         = 0
 }
 

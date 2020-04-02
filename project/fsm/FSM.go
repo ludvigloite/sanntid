@@ -2,105 +2,128 @@ package fsm
 
 import(
 	"fmt"
-	//"../elevcontroller"
-	"../orderhandler"
-)
-
-const(
-	IDLE = "IDLE"
-	ACTIVE = "ACTIVE"
-	RESET = "RESET"
+	//"../orderhandler"
+	"../elevio"
+	"../config"
+	"../elevcontroller"
 )
 
 
-func RunElevator(){
 
-	state := IDLE
+func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator, elevator *config.Elevator){
 
-	//orderhandler.currentFloor
-	//orderhandler.currentDir
+    /* 		INIT 	*/
+
+	elevcontroller.Initialize(elevator)
+
+	floor := <- ch.Drv_floors
+	for floor == -1{
+		floor = <- ch.Drv_floors
+	}
+
+	NuActiveElevators := 0
+
+	for _, elevator := range elevatorMap{
+		if elevator.Active{
+			NuActiveElevators++
+		}
+	}
 
 
-	drv_buttons := make(chan elevio.ButtonEvent)
-    drv_floors  := make(chan int)
-    drv_obstr   := make(chan bool)
-    drv_stop    := make(chan bool)
+    elevator.Active = true
+    elevator.ElevRank = NuActiveElevators + 1
+    fmt.Println("JEG HAR RANK ",elevator.ElevRank)
 
-    go elevio.PollButtons(drv_buttons)
-    go elevio.PollFloorSensor(drv_floors)
-    go elevio.PollObstructionSwitch(drv_obstr)
-    go elevio.PollStopButton(drv_stop)
+	elevio.SetMotorDirection(elevio.MD_Stop)
+	elevio.SetFloorIndicator(floor)
+	elevator.CurrentFloor = floor
 
+	/*		INIT FERDIG		*/
 
+	ch.New_state <- *elevator
 
+	fmt.Println("Heisen er intialisert og venter i etasje nr ", floor)
 
 	for{
-		switch state{
-		case IDLE: //heis er IDLE. Skal ikke gjøre noe med mindre den får knappetrykk eller får inn en ordre som skal utføres
-			select{
-			case order := <- drv_buttons:
-				fmt.Println("Knapp er trykket fra IDLE")
-				//elevio.SetButtonLamp(order.Button, order.Floor, true)
-				orderhandler.AddOrder(order.Floor, int(order.Button),0) //0 fordi det bare skal legges til ordre. Ingen har tatt den enda.
-				orderhandler.UpdateLights()
 
-			default:
-				//sjekk om en ordre skal utføres
-				newOrder := orderhandler.GetNewOrder()
-				if newOrder.Floor != -1{
-					//Det er funnet en ordre
-					fmt.Println("Det er funnet en ordre! Denne skal jeg utføre")
-					orderhandler.AddOrder(newOrder.Floor, newOrder.ButtonType, orderhandler.elevatorID)
-					orderhandler.SetCurrentOrder(newOrder.Floor)
-					orderhandler.SetCurrentDir(orderhandler.GetDirection(orderhandler.currentFloor, orderhandler.currentOrder))
+		switch elevatorMap[elevID].CurrentState{
+		case config.IDLE:
 
-					state = ACTIVE
-				}
+			destination := elevatorMap[elevID].CurrentOrder
+			if destination.Floor != -1{
+				//fmt.Println("Jeg har fått en oppgave i etasje ",destination.Floor,"! Denne skal jeg utføre")
+
+				elevatorMap[elevID].CurrentDir = elevcontroller.GetDirection(*elevatorMap[elevID]) //kanskje jeg må bruke destination istedet for elevator.CurrentOrder. Ting kan fucke segf om currentorder endres!
+
+				elevio.SetMotorDirection(elevatorMap[elevID].CurrentDir)
+				elevatorMap[elevID].CurrentState = config.ACTIVE
+
+				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
+
 			}
 
-
-
-
-		case ACTIVE:
-			elevio.SetMotorDirection(elevio.SetMotorDirection(orderhandler.GetDirection(orderhandler.currentFloor, orderhandler.currentOrder)))
-			
+		case config.ACTIVE:
 			select{
-			case order := <- drv_buttons: //Fått inn knappetrykk
-				fmt.Println("Knapp er trykket fra ACTIVE")
-				//elevio.SetButtonLamp(order.Button, order.Floor, true)
-				orderhandler.AddOrder(order.Floor, int(order.Button),0) //0 fordi det bare skal legges til ordre. Ingen har tatt den enda.
-				orderhandler.UpdateLights()
+			case reachedFloor := <- ch.Drv_floors: //treffet et floor
+				fmt.Println("Passerte etasje ", reachedFloor)
+				elevio.SetFloorIndicator(reachedFloor)
+				elevatorMap[elevID].CurrentFloor = reachedFloor
 
-			case reachedFloor := <- drv_floors:
-				orderhandler.currentFloor = reachedFloor
-				elevio.SetFloorIndicator(floor)
-				if orderhandler.ShouldStopAtFloor(floor, orderhandler.currentOrder, orderhandler.elevID){ //Kan jeg ikke bare ta variablene rett fra orderhandler??
-					fmt.Println("stopping at floor")
-					elevcontroller.StopElevator()
-					orderhandler.ClearFloor()
-					if orderhandler.GetDirection(orderhandler.currentFloor, orderhandler.currentOrder) == 0 {
-						//kommet frem til enden.
-						orderhandler.SetCurrentOrder(-1)
-						state = IDLE
-					}else{
-						elevio.SetMotorDirection(elevio.SetMotorDirection(orderhandler.GetDirection(orderhandler.currentFloor, orderhandler.currentOrder)))
-					}
+				if elevcontroller.ShouldStopAtFloor(*elevatorMap[elevID]){
+					//fmt.Println("stopping at floor")
+
+					elevio.SetDoorOpenLamp(true)
+					ch.Open_door <- true
+					elevio.SetMotorDirection(elevio.MD_Stop)
+					elevatorMap[elevID].CurrentState = config.DOOR_OPEN
+
+					ch.Stopping_at_floor <- reachedFloor //sender til de andre heisene slik at de kan slette alt i den etasjen.
 				}
+				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
 
 			default:
 
+				if elevatorMap[elevID].CurrentDir == elevio.MD_Stop{
+					//fmt.Println("stopping at floor I am already in")
+
+					elevio.SetDoorOpenLamp(true)
+					ch.Open_door <- true
+					ch.Stopping_at_floor <- elevatorMap[elevID].CurrentFloor
+
+					elevio.SetMotorDirection(elevio.MD_Stop)
+					elevatorMap[elevID].CurrentState = config.DOOR_OPEN
+
+					go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
+				}
 
 			}
 
 
+		case config.DOOR_OPEN:
+
+			select{
+			case <- ch.Close_door:
+
+				fmt.Println("closing door__")
+				elevio.SetDoorOpenLamp(false) //slår av lys
+
+				elevatorMap[elevID].CurrentState = config.IDLE
+
+				if elevatorMap[elevID].CurrentOrder.Floor == elevatorMap[elevID].CurrentFloor{
+					elevatorMap[elevID].CurrentOrder.Floor = -1 //Fjerner currentOrder, siden den har utført den.
+					//fmt.Println("CurrentOrder er fjernet!")
+				}
+
+				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
+			}
 
 
 
-
-
-		case RESET:
+		case config.UNDEFINED: //??
 			//
 
+
+		default:
 
 		}
 	}

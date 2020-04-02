@@ -1,37 +1,16 @@
 package timer
 
-/*
 import(
   "time"
 )
 
-var timerFlag int
-
-func timer_start(){
-  timerFlag = 1
-}
-
-func MotorTimer(finished chan<- bool, start <-chan bool, motorMotionTimer time.Duration)
-
-  motorTimer := time.NewTimer(4 * time.Second)
 
 
+func DoorTimer(finished chan<- bool, start <-chan bool, doorOpenTime time.Duration) { //må kjøres som goroutine
 
-  for {
-    select {
-    case <-start:
-      motorTimer.Reset(motorMotionTimer)
-    case <-motorTimer.:
-      finished <- true
-    }
-  }
-}
+	doorTimer := time.NewTimer(doorOpenTime)
 
-
-func DoorTimer(finished chan<- bool, start <-chan bool, doorOpenTime time.Duration) {
-
-	doorTimer := time.NewTimer(3 * time.Second)
-
+  //empty the channel -> not concurrent receivers
 	if !doorTimer.Stop() {
 		<-doorTimer.C
 	}
@@ -40,13 +19,8 @@ func DoorTimer(finished chan<- bool, start <-chan bool, doorOpenTime time.Durati
 		select {
 		case <-start:
 			doorTimer.Reset(doorOpenTime)
-		case <-doorTimer.:
+		case <-doorTimer.C:
 			finished <- true
 		}
 	}
 }
-
-motorTimedOut.Stop()
-
-
-*/
