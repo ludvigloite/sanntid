@@ -11,16 +11,18 @@ const(
 	NUM_FLOORS 			= 4
 	NUM_HALLBUTTONS 	= 2
 	NUM_ELEVATORS		= 3
-	DOOR_OPEN_TIME 		= 3 * time.Second 
-	WATCHDOG_TIMEOUT	= 5 * time.Second
+	DOOR_OPEN_TIME 		= 3 * time.Second
+	SEND_ELEV_CYCLE		= 5 * time.Second
+	//WATCHDOG_TIMEOUT	= 5 * time.Second
 )
 
 const(
-	SERVER_PORT 				= 12346//15647//15371 //ENDRES
-	BROADCAST_ORDER_PORT		= 12347//16732 //ENDRES
-	BROADCAST_CURRENT_ORDER_PORT= 12348
-	BROADCAST_ELEV_STATE_PORT	= 12349
-	BROADCAST_INTERVAL 			= 200 * time.Millisecond
+	SERVER_PORT 					= 12346
+	BROADCAST_ORDER_PORT			= 12347
+	BROADCAST_CURRENT_ORDER_PORT	= 12348
+	BROADCAST_ELEV_STATE_PORT		= 12349
+	BROADCAST_CAB_BACKUP_PORT		= 12350
+	//BROADCAST_INTERVAL 				= 200 * time.Millisecond
 
 )
 
@@ -80,12 +82,14 @@ type FSMChannels struct {
 }
 
 type NetworkChannels struct{
-	PeerUpdateCh 			chan peers.PeerUpdate
-	PeerTxEnable 			chan bool
-	TransmittOrderCh 		chan Order
-	ReceiveOrderCh 			chan Order
-	TransmittElevStateCh 	chan Elevator
-	ReceiveElevStateCh 		chan Elevator
-	TransmittCurrentOrderCh	chan Order
-	ReceiveCurrentOrderCh	chan Order
+	PeerUpdateCh 				chan peers.PeerUpdate
+	PeerTxEnable 				chan bool
+	TransmittOrderCh 			chan Order
+	ReceiveOrderCh 				chan Order
+	TransmittElevStateCh 		chan Elevator
+	ReceiveElevStateCh 			chan Elevator
+	TransmittCurrentOrderCh		chan Order
+	ReceiveCurrentOrderCh		chan Order
+	TransmittCabOrderBackupCh 	chan map[string][NUM_FLOORS]bool
+	ReceiveCabOrderBackupCh		chan map[string][NUM_FLOORS]bool
 }

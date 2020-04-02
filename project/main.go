@@ -19,6 +19,9 @@ import(
     "time"
 )
 
+//KANSKJE LAGE EN FUNKSJON SOM HELE TIDEN SJEKKER AT EN OG BARE EN HEIS ER MASTER
+//KANSKJE LAGE EN FUNKSJON SOM SJEKKER AT CURRENTORDER IKKE ER TATT AV NOEN SOM ER INAKTIVE. EVT WATCHDOG.
+
 func main(){
 
     elevIDPtr := flag.Int("elevID",42,"elevator ID")
@@ -83,6 +86,8 @@ func main(){
         ReceiveElevStateCh: make(chan config.Elevator),
         TransmittCurrentOrderCh: make(chan config.Order),
         ReceiveCurrentOrderCh: make(chan config.Order),
+        TransmittCabOrderBackupCh: make(chan map[string][config.NUM_FLOORS]bool),
+        ReceiveCabOrderBackupCh:make(chan map[string][config.NUM_FLOORS]bool),
     }
 
     go peers.Transmitter(config.SERVER_PORT, strconv.Itoa(elevID), networkChannels.PeerTxEnable)
@@ -97,6 +102,9 @@ func main(){
     go bcast.Transmitter(config.BROADCAST_CURRENT_ORDER_PORT, networkChannels.TransmittCurrentOrderCh)
     go bcast.Receiver(config.BROADCAST_CURRENT_ORDER_PORT, networkChannels.ReceiveCurrentOrderCh)
 
+    go bcast.Transmitter(config.BROADCAST_CAB_BACKUP_PORT, networkChannels.TransmittCabOrderBackupCh)
+    go bcast.Receiver(config.BROADCAST_CAB_BACKUP_PORT, networkChannels.ReceiveCabOrderBackupCh)
+
 
     go elevio.PollButtons(fsmChannels.Drv_buttons)
     go elevio.PollFloorSensor(fsmChannels.Drv_floors)
@@ -107,7 +115,7 @@ func main(){
     go network.Receiver(networkChannels,fsmChannels, elevID, elevatorMap)
     go arbitrator.Arbitrator(fsmChannels, elevID, elevatorMap)
 
-    //go elevcontroller.PrintElevators_withTime(elevatorMap)
+    //go elevcontroller.PrintElevators_withTime(elevatorMap, config.SEND_ELEV_CYCLE)
 
 
     fsm.RunElevator(fsmChannels, elevID, elevatorMap, &elevator) //kjøre som go?

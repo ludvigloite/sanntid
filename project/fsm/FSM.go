@@ -22,15 +22,31 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 	}
 
 	NuActiveElevators := 0
+	elevator.Active = true
+
 	
-	for _, elevator := range elevatorMap{
-		if elevator.Active{
+	for _, elev := range elevatorMap{
+		if elev.Active{
 			NuActiveElevators++
+		}
+	}
+	nuIdenticalRank := -1
+	for nuIdenticalRank != 0{
+		nuIdenticalRank = 0
+		for _,elev := range elevatorMap{
+			if elev.Active && elev.ElevRank == NuActiveElevators{
+				fmt.Println("Rank er lik som noen andre..")
+				nuIdenticalRank ++
+				if NuActiveElevators != 1{
+					NuActiveElevators--
+				}else if NuActiveElevators != 3{
+					NuActiveElevators++
+				}
+			}
 		}
 	}
 	
 
-    elevator.Active = true
     elevator.ElevRank = NuActiveElevators
     fmt.Println("JEG HAR RANK ",elevator.ElevRank)
 
@@ -44,6 +60,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 
 
 	fmt.Println("Heisen er intialisert og venter i etasje nr ", floor)
+	fmt.Println()
 
 	for{
 
@@ -66,7 +83,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 		case config.ACTIVE:
 			select{
 			case reachedFloor := <- ch.Drv_floors: //treffet et floor
-				fmt.Println("Passerte etasje ", reachedFloor)
+				//fmt.Println("Passerte etasje ", reachedFloor)
 				elevio.SetFloorIndicator(reachedFloor)
 				elevatorMap[elevID].CurrentFloor = reachedFloor
 
@@ -105,7 +122,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			select{
 			case <- ch.Close_door:
 	
-				fmt.Println("closing door__")
+				//fmt.Println("closing door__")
 				elevio.SetDoorOpenLamp(false) //slår av lys
 
 				elevatorMap[elevID].CurrentState = config.IDLE

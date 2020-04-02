@@ -8,7 +8,47 @@ import(
 	"time"
 	//"math/rand"
 )
+/*
+func RankChecker2(elevID int, elevatorMap map[int]*config.Elevator){
 
+	NuActiveElevators := 0
+	for !elevatorMap[elevID].Active{}
+
+
+	for _, elevator := range elevatorMap{
+		if elevator.Active{
+			NuActiveElevators++
+		}
+	}
+	elevatorMap[elevID].ElevRank = NuActiveElevators
+
+}
+
+func RankChecker(elevatorMap map[int]*config.Elevator){ //kjøres som goroutine. Sjekker at det alltid er en og kun en master.
+	ID_to_Master := -1
+	nuMasters := 0
+	for{
+		nuMasters = 0
+		for i, elevator := range elevatorMap{
+			if elevator.ElevRank == 1{
+				nuMasters++
+				ID_to_Master = i
+			}
+		}
+		if nuMasters == 0{
+			for i, elevator := range elevatorMap{
+				if elevator.Active{
+					nuMasters++
+					ID_to_Master = i
+				}
+			}
+		}
+		if nuMasters > 1{
+
+		}
+	}
+}
+*/
 
 func Initialize(elevator *config.Elevator){
 	elevio.SetMotorDirection(elevio.MD_Down)
@@ -58,7 +98,7 @@ func PrintElevator(elevator config.Elevator){
 	fmt.Println()
 }
 
-func PrintElevators_withTime(elevatorMap map[int]*config.Elevator){
+func PrintElevators_withTime(elevatorMap map[int]*config.Elevator, openTime time.Duration){
 	for{
 		for _, elevator := range elevatorMap{
 			fmt.Println()
@@ -76,7 +116,7 @@ func PrintElevators_withTime(elevatorMap map[int]*config.Elevator){
 			fmt.Println()
 			time.Sleep(300*time.Millisecond)
 		}
-		time.Sleep(10*time.Second)
+		time.Sleep(openTime)
 	}
 }
 

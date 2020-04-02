@@ -67,28 +67,50 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
   }
 }
 
-func SendCabOrdersWhenComeback(netCh config.NetworkChannels, elevatorMap map[int]*config.Elevator, comebackElev int, senderElev int, cabOrdersBackup map[int][config.NUM_FLOORS]bool){
+func SendOrdersWhenComeback(netCh config.NetworkChannels, elevatorMap map[int]*config.Elevator, comebackElev string, senderElev int, cabOrdersBackup map[string][config.NUM_FLOORS]bool){
+  comebackElevInt,_ := strconv.Atoi(comebackElev)
   order := config.Order{}
   order.Sender_elev_ID = senderElev
   order.Sender_elev_rank = elevatorMap[senderElev].ElevRank
-  order.ButtonType = elevio.BT_Cab
-  order.Packet_id = rand.Intn(10000)
+  //order.ButtonType = elevio.BT_Cab
+  order.Packet_id = rand.Intn(10000) //DETTE FUNKER IKKE!! ALLE PAKKENE FÅR SAMME PACKET_ID!
   order.Should_add = true //Det er en ordre som skal legges til
-  order.Receiver_elev = comebackElev
+  order.Receiver_elev = comebackElevInt
 
   for i := 0; i < config.NUM_FLOORS; i++{
     if cabOrdersBackup[comebackElev][i]{
       order.Floor = i
+      order.ButtonType = elevio.BT_Cab
       netCh.TransmittOrderCh <- order
+    }
+    for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
+      if elevatorMap[senderElev].HallOrders[i][j]{
+        order.Floor = i
+        order.ButtonType = j
+        netCh.TransmittOrderCh <- order
+      }
     }
   }
 }
 
+func MergeCaborders(cabOrders1 map[string][config.NUM_FLOORS]bool, cabOrders2 map[string][config.NUM_FLOORS]bool) map[string][config.NUM_FLOORS]bool{
+  cabOrders := make(map[string][config.NUM_FLOORS]bool)
+  var list [config.NUM_FLOORS]bool
+  i_str := ""
+  for i := 1; i < config.NUM_ELEVATORS+1; i++{
+    i_str = strconv.Itoa(i)
+    for j := 0; j < config.NUM_FLOORS; j++{
+      list[j] = cabOrders1[i_str][j] || cabOrders2[i_str][j] //hvis en av dem blir true returnerer vi true
+    }
+    cabOrders[i_str] = list
+  }
+  return cabOrders
+}
 
 
 func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator){
 
-  cabOrdersBackup := make(map[int][config.NUM_FLOORS]bool)
+  cabOrdersBackup := make(map[string][config.NUM_FLOORS]bool) //måtte være indeksert på string for å sendes med JSON
 
   for{
     select{
@@ -98,32 +120,51 @@ func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, e
       fmt.Printf("  New:      %q\n", p.New)
       fmt.Printf("  Lost:     %q\n", p.Lost)
 
-      //HAR DET KOMMET NOEN FLERE ELEVATORS TIL?
+      //GÅR GJENNOM ALLE SOM ER ACTIVE
       for _, peerStr := range p.Peers{
         peerInt, _ := strconv.Atoi(peerStr)
         elevatorMap[peerInt].Active = true
+      }
+
+
+      //HAR DET KOMMET NOEN FLERE ELEVATORS TIL?
+      if len(p.New) > 0{
         fsmCh.New_state <- *elevatorMap[elevID] //om det kommer noen nye må du sende ut deg selv sånn at de kan legge deg til!
-        SendCabOrdersWhenComeback(ch, elevatorMap, peerInt, elevID, cabOrdersBackup)
-        //Send dine hall_orders og lagrede Cab orders!
+        ch.TransmittCabOrderBackupCh <- cabOrdersBackup //sender cabOrderBackup slik at alle vet om det.
+        //peerInt,_ := strconv.Atoi(p.New)
+        SendOrdersWhenComeback(ch, elevatorMap, p.New, elevID, cabOrdersBackup)
       }
     
 
       //HAR VI MISTET NOEN ELEVATORS?
       if len(p.Lost) > 0{
+
         for _, peerStr := range p.Lost{
           peerInt, _ := strconv.Atoi(peerStr)
           elevatorMap[peerInt].Active = false
-          cabOrdersBackup[peerInt] = elevatorMap[peerInt].CabOrders
+          cabOrdersBackup[peerStr] = elevatorMap[peerInt].CabOrders
           elevatorMap[peerInt].CurrentOrder.Floor = -1
+          //fmt.Println("currentOrder for ", peerInt," skal slettes!!")
+          fsmCh.New_current_order <- config.Order{Sender_elev_ID: elevID, Floor: -1, Receiver_elev: peerInt}
 
+
+          //Istedet for det under kan jeg bare gå gjennom alle Active og så sette elevRank deretter.
           if elevatorMap[peerInt].ElevRank == 1{ //MASTER FIKSING
             elevatorMap[peerInt].ElevRank = 3
             elevatorMap[elevID].ElevRank --
-            fmt.Println("Jeg har nå rank ",elevatorMap[elevID].ElevRank)
+          }else if elevatorMap[peerInt].ElevRank == 2 && elevatorMap[elevID].ElevRank == 3{
+            elevatorMap[elevID].ElevRank = 2
           }
+          fmt.Println("Jeg har nå rank ",elevatorMap[elevID].ElevRank)
         }
+        fsmCh.New_state <- *elevatorMap[elevID] //Alle må vite om din nye rank
       }
 
+
+    case newCabOrderBackup := <-ch.ReceiveCabOrderBackupCh:
+      cabOrdersBackup = MergeCaborders(cabOrdersBackup, newCabOrderBackup)
+
+      //cabOrdersBackup = newCabOrderBackup //Kanskje man skal merge slik at hvis en av den har en true vil det bli lagt til true. Altså en OR
 
 
     case receivedOrder := <-ch.ReceiveOrderCh:

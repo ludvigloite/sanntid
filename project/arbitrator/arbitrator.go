@@ -120,17 +120,19 @@ func Arbitrator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.E
 	for{
 		if elevatorMap[elevID].ElevRank == 1{
 			for i, elevator := range elevatorMap{ //går gjennom heisene. USIKKER PÅ OM DETTE FUNKER..
-				if elevator.CurrentOrder.Floor == -1{
+				if elevator.Active{
+					if elevator.CurrentOrder.Floor == -1{
 
-					//Heis har ingen current orders! Finnes det noen nye ordre?
-					order = GetNewOrder(*elevator, elevatorMap, elevID, i)
-					
-					if order.Floor != -1{
+						//Heis har ingen current orders! Finnes det noen nye ordre?
+						order = GetNewOrder(*elevator, elevatorMap, elevID, i)
+						
+						if order.Floor != -1{
 
-						elevatorMap[i].CurrentOrder = order
-						//fmt.Println("Ny currentOrder til heis nr ",i)
-						ch.New_current_order <- order
-						ch.New_state <- *elevatorMap[i]	
+							elevatorMap[i].CurrentOrder = order
+							//fmt.Println("Ny currentOrder til heis nr ",i)
+							ch.New_current_order <- order
+							//ch.New_state <- *elevatorMap[i]	
+						}
 					}
 				}
 			}
