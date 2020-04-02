@@ -31,7 +31,7 @@ func main(){
 
     rand.Seed(time.Now().UnixNano()) //genererer seed til randomizer.
 
-    elevio.Init("localhost:"+port,config.NUM_FLOORS)
+    elevio.Init("localhost:"+port, config.NUM_FLOORS)
 
     elevatorMap := make(map[int]*config.Elevator)
     //activeElevators := make(map[int]bool) //activeElevators[elevID] = false/true)
@@ -48,6 +48,7 @@ func main(){
         CabOrders: [config.NUM_FLOORS]bool{},
         HallOrders: [config.NUM_FLOORS][config.NUM_HALLBUTTONS]bool{},
     }
+
     firstElevator := elevator
     firstElevator.ElevID = 1
     elevatorMap[1] = &firstElevator
@@ -59,6 +60,7 @@ func main(){
     elevatorMap[3] = &thirdElevator
 
     elevatorMap[elevID] = &elevator
+    
 
 
     fsmChannels := config.FSMChannels{

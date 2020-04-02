@@ -36,12 +36,13 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 
 	elevio.SetMotorDirection(elevio.MD_Stop)
 	elevio.SetFloorIndicator(floor)
-	elevator.CurrentFloor = floor
+	elevator.CurrentFloor = floor //Siden det er snakk om pekere vil dette være det samme som elevatorMap[elevID].CurrentFloor = floor
 	
 	/*		INIT FERDIG		*/
 
 	ch.New_state <- *elevator
-	
+
+
 	fmt.Println("Heisen er intialisert og venter i etasje nr ", floor)
 
 	for{

@@ -154,7 +154,7 @@ func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, e
         *elevatorMap[elevator.ElevID] = elevator
         //fmt.Println("MOTTATT HEIS:")
         //elevcontroller.PrintElevator(*elevatorMap[elevator.ElevID])
-        fsmCh.LightUpdateCh <- true
+        //fsmCh.LightUpdateCh <- true //Denne trengs vel ikke? Ingenting med deg selv blir endret.
       }
 
     case newCurrentOrder := <-ch.ReceiveCurrentOrderCh:
