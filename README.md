@@ -4,6 +4,8 @@ STATUS
 
   Lurer paa om systemet med hvordan rank endres naar noder faller ikkke fungerer. I tillegg detter noder inn og ut hele tiden. Kan hende det er at jeg ikke tillatter aa sende UDP paa PCen min, maa evt sjekke dette hvis dere andre klarer aa kjore koden uproblematisk paa deres maskiner.
 
+  Slik programmet er naa maa man alltid ha en med rank 1 for at det skal fungere. Altsaa maa heis med ID = 1 alltid begynne for at heisen skal fungere.  
+
 NYTTIG
 
     Kill eldste prosess fra sanntids-PC
