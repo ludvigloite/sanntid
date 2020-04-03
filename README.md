@@ -17,6 +17,34 @@ $ osascript sanntid_terminal_opener.scpt
 $ ./open_files.sh
 ```
 
+## SJEKKE FORSKJELLIGE TING
+1. Motor Failure
+Trykk 8 for å stoppe motor. Trykk 7(ned) eller 9(opp) for å starte igjen
+2. Pakketap
+```bash
+$ sudo iptables -A INPUT -p tcp --dport 12347 -j ACCEPT
+$ sudo iptables -A INPUT -p tcp --sport 12347 -j ACCEPT
+
+$ sudo iptables -A INPUT -p tcp --dport 12348 -j ACCEPT
+$ sudo iptables -A INPUT -p tcp --sport 12348 -j ACCEPT
+
+$ sudo iptables -A INPUT -p tcp --dport 12349 -j ACCEPT
+$ sudo iptables -A INPUT -p tcp --sport 12349 -j ACCEPT
+
+$ sudo iptables -A INPUT -p tcp --dport 12350 -j ACCEPT
+$ sudo iptables -A INPUT -p tcp --sport 12350 -j ACCEPT
+
+$ sudo iptables -A INPUT -m statistic --mode random --probability 0.2 -j DROP
+```
+For å flushe filter chain:
+```bash
+$ sudo iptables -F
+```
+3. Nettverkstrøbbel
+```bash
+$ TO BE CONTINUED
+```
+
 
 
 ## For å kjøre ElevatorDriver
