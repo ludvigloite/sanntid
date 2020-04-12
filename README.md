@@ -4,37 +4,40 @@
 3. Simulatoren klikket en del, blant annet ved at bildet viste at heisen sto stille mens den i "realiteten" bevegde seg, og dermed plutselig hoppa et stykke. Usikker på om dette er pga stort program(15 goroutines), dårlig nett for meg, eller dårlig Simulator..
 
 ## NYTTIG
-1. Kill eldste prosess fra sanntids-PC
+1. Legg til scripts i PATH
 ```bash
-$ pkill -o -u ludvig sshd
+$ cd
+$ vim .bashrc
 ```
-2. Fra Mac:
+Legg til følgende på bunn av fila:
 ```bash
-$ osascript sanntid_terminal_opener.scpt
+$ export PATH=$PATH:path/to/file    for eksempel ~/ for hjemmemappa eller ~/Simulator-v2
 ```
-3. Fra remote:
-```bash
-$ ./open_files.sh
-```
+Du kan nå kjøre scriptet uansett hvor du er i filsystemet
 
-## SJEKKE FORSKJELLIGE TING
+2. Gjør scripts kjørbare:
+```bash
+$ chmod +x <filename>
+```
+3. Hvordan funker 'Heis.sh' ?
+For å kjøre en heis på port 14001, kjør følgende. Elev_ID vil automatisk bli det siste sifferet, i dette tilfellet 1.
+```bash
+$ Heis.sh 14001
+```
+4. FileOpener.sh funker ikke
+Du må oppdatere første linja med kode, som hos meg er
+```bash
+$ cd ~/sanntid/project/
+```
+Her kan du også velge hvilken rekkefølge filene åpnes i. Ikke alle filene i prosjektet blir åpnet.
+
+
+## FAULT HANDLING
 1. Motor Failure
 Trykk 8 for å stoppe motor. Trykk 7(ned) eller 9(opp) for å starte igjen
 2. Pakketap
 ```bash
-$ sudo iptables -A INPUT -p tcp --dport 12347 -j ACCEPT
-$ sudo iptables -A INPUT -p tcp --sport 12347 -j ACCEPT
-
-$ sudo iptables -A INPUT -p tcp --dport 12348 -j ACCEPT
-$ sudo iptables -A INPUT -p tcp --sport 12348 -j ACCEPT
-
-$ sudo iptables -A INPUT -p tcp --dport 12349 -j ACCEPT
-$ sudo iptables -A INPUT -p tcp --sport 12349 -j ACCEPT
-
-$ sudo iptables -A INPUT -p tcp --dport 12350 -j ACCEPT
-$ sudo iptables -A INPUT -p tcp --sport 12350 -j ACCEPT
-
-$ sudo iptables -A INPUT -m statistic --mode random --probability 0.2 -j DROP
+$ PacketLoss.sh
 ```
 For å flushe filter chain:
 ```bash
@@ -42,54 +45,15 @@ $ sudo iptables -F
 ```
 3. Nettverkstrøbbel
 ```bash
-$ TO BE CONTINUED
+$ NetworkLoss.sh
 ```
 
-
-
-## For å kjøre ElevatorDriver
+## For å kjøre ElevatorDriver(fysisk på sanntidssal)
 1. Gå i terminal
 2. skriv "pwd",  "/home/student/" bør da komme opp. Hvis ikke, skriv "cd".
 3. Skriv "cd .cargo/bin"
 4. Skriv "./ElevatorServer"
 5. Man kan nå kjøre main.go så vil heisen kjøre.
-
-
-## Kjør programmet med ELEV_ID
-1. Naviger til mappen
-2. NUMMER er enten 1, 2 eller 3 
-```bash
-$ go build main.go
-$ ./main -elevID='NUMMER'
-```
-
-## Linker for å kjøre Ludvigs mac
-
-1. KJØR Simulator
-```bash
-$ ./Desktop/Local\ Storage/heisSimulator/Simulator-v2/SimElevatorServer --port 10001
-```
-2. Åpne prosjektet
-```bash
-$ cd Desktop/Local\ Storage/Sanntid_prosjekt/sanntid
-
-Åpne filer:
-$ subl project 
-
-Build(inne i /project):
-$ go build main.go
-
-Kjør:
-$ ./main -elevID=1 -port=10001
-$ ./Desktop/Local\ Storage/Sanntid_prosjekt/sanntid/project/main -elevID=1 -port=10001
-```
-
-
-
-
-
-
-
 
 
 ## Hvordan update branch til Master
