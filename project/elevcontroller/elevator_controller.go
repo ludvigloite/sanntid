@@ -139,7 +139,7 @@ func ShouldStopAtFloor(elevator config.Elevator) bool{
 	currentFloor := elevator.CurrentFloor
 	dir := elevator.CurrentDir
 	destinationFloor := elevator.CurrentOrder.Floor
-	if currentFloor == destinationFloor{
+	if currentFloor == destinationFloor || currentFloor == 0 || currentFloor == 3{
 		return true
 	}
 	if dir == elevio.MD_Stop{ //har ingen ordre eller er på etasjen currentOrder tilsier. KAN FØRE TIL ERROR!!

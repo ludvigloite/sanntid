@@ -82,6 +82,8 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			select{
 			case reachedFloor := <- ch.Drv_floors:
 				elevio.SetFloorIndicator(reachedFloor)
+				ch.Watchdog_updater <- true
+
 				elevatorMap[elevID].CurrentFloor = reachedFloor
 				elevatorMap[elevID].Stuck = false
 
@@ -100,6 +102,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			default:
 
 				if elevatorMap[elevID].CurrentDir == elevio.MD_Stop{
+					ch.Watchdog_updater <- true
 					//Kommet ny ordre i etasje heis allerede er i
 
 					elevio.SetDoorOpenLamp(true)

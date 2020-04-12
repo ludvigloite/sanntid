@@ -14,7 +14,7 @@ const(
 	DOOR_OPEN_TIME 		= 3 * time.Second
 	SEND_ELEV_CYCLE		= 5 * time.Second
 	NUM_PACKETS			= 3
-	WATCHDOG_TIME		= 5 * time.Second
+	WATCHDOG_TIME		= 8 * time.Second
 )
 
 const(
@@ -83,6 +83,7 @@ type FSMChannels struct {
     New_state			chan Elevator
     New_current_order 	chan Order
     Stopping_at_floor	chan int
+    Watchdog_updater	chan bool
 }
 
 type NetworkChannels struct{

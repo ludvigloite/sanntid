@@ -31,22 +31,33 @@ func WatchDogTimer(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevI
 	WatchDogTimer := time.NewTimer(watchDogTime)
 
   //empty the channel -> not concurrent receivers
-	if !WatchDogTimer.Stop() {
+	if !WatchDogTimer.Stop() && elevatorMap[elevID].CurrentOrder.Floor != -1 && elevatorMap[elevID].CurrentState == config.ACTIVE {
 		<-WatchDogTimer.C
 	}
+	
+	go func(){
+		for{
+			if elevatorMap[elevID].CurrentState != config.ACTIVE{
+				WatchDogTimer.Stop()
+				WatchDogTimer.Reset(watchDogTime)
+				time.Sleep(time.Second)
+			}
+		}
+	 }()
 
 	for {
 		select {
-		case <-fsmCh.Drv_floors:
-			//SJEKK OM DEN HAR EN CURRENT_ORDER!!! HVIS IKKE SKAL IKKE TIDEN RESETTES
-			if elevatorMap[elevID].CurrentOrder.Floor != -1{
-				WatchDogTimer.Reset(watchDogTime)
-			}
+		case <-fsmCh.Watchdog_updater:
+			WatchDogTimer.Stop()
+			WatchDogTimer.Reset(watchDogTime)
+			//fmt.Println("WatchDog Reset")
+
 		case <-WatchDogTimer.C:
 			fmt.Println("WatchDog Released")
 			elevatorMap[elevID].CurrentOrder.Floor = -1
 			elevatorMap[elevID].Stuck = true
-			go func(){fsmCh.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
+			go func(){fsmCh.New_state <- *elevatorMap[elevID]}()
+					
 		}
 	}
 

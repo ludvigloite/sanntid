@@ -73,6 +73,7 @@ func main(){
         New_state: make(chan config.Elevator),
         New_current_order: make(chan config.Order),
         Stopping_at_floor: make(chan int),
+        Watchdog_updater: make(chan bool),
     }
 
     networkChannels := config.NetworkChannels{
