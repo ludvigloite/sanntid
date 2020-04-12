@@ -116,7 +116,7 @@ func Arbitrator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.E
 	for{
 		if elevatorMap[elevID].ElevRank == 1{
 			for i, elevator := range elevatorMap{ //går gjennom heisene.
-				if elevator.Active{
+				if elevator.Active && !elevator.Stuck{
 					if elevator.CurrentOrder.Floor == -1{
 
 						//Heis har ingen current orders! Finnes det noen nye ordre?

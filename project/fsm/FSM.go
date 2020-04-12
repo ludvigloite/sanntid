@@ -83,6 +83,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			case reachedFloor := <- ch.Drv_floors:
 				elevio.SetFloorIndicator(reachedFloor)
 				elevatorMap[elevID].CurrentFloor = reachedFloor
+				elevatorMap[elevID].Stuck = false
 
 				if elevcontroller.ShouldStopAtFloor(*elevatorMap[elevID]){
 					//Stopping at floor

@@ -14,7 +14,7 @@ const(
 	DOOR_OPEN_TIME 		= 3 * time.Second
 	SEND_ELEV_CYCLE		= 5 * time.Second
 	NUM_PACKETS			= 3
-	//WATCHDOG_TIMEOUT	= 5 * time.Second
+	WATCHDOG_TIME		= 5 * time.Second
 )
 
 const(
@@ -63,6 +63,7 @@ const (
 
 type Elevator struct{
 	Active bool
+	Stuck bool
 	ElevID int
 	ElevRank int
 	CurrentOrder Order

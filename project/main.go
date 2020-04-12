@@ -107,6 +107,7 @@ func main(){
     go elevio.PollButtons(fsmChannels.Drv_buttons)
     go elevio.PollFloorSensor(fsmChannels.Drv_floors)
     go timer.DoorTimer(fsmChannels.Close_door,fsmChannels.Open_door,config.DOOR_OPEN_TIME) //Legg true på open_door når dør skal åpnes //skrives true til close_door når tiden er ute
+    go timer.WatchDogTimer(fsmChannels, networkChannels, elevID, elevatorMap, config.WATCHDOG_TIME)
     go orderhandler.LightUpdater(fsmChannels.LightUpdateCh, elevatorMap, elevID)
 
     go network.Sender(fsmChannels, networkChannels, elevID, elevatorMap)
