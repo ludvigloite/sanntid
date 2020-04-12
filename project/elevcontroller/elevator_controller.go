@@ -103,6 +103,7 @@ func PrintElevators_withTime(elevatorMap map[int]*config.Elevator, openTime time
 		for _, elevator := range elevatorMap{
 			fmt.Println()
 			fmt.Println("elevID: ",elevator.ElevID,"\t Rank: ",elevator.ElevRank)
+			fmt.Println("Active? ",elevator.Active, "\t Stuck? ", elevator.Stuck)
 			fmt.Println("CurrentOrder = Floor: ",elevator.CurrentOrder.Floor, "\t ButtonType: ",elevator.CurrentOrder.ButtonType)
 			fmt.Println("CurrentFloor = ", elevator.CurrentFloor)
 			fmt.Println("CurrentState = ", elevator.CurrentState)
@@ -123,6 +124,7 @@ func PrintElevators_withTime(elevatorMap map[int]*config.Elevator, openTime time
 func GetDirection(elevator config.Elevator) elevio.MotorDirection{
 	currentFloor := elevator.CurrentFloor
 	destinationFloor := elevator.CurrentOrder.Floor
+
 	if destinationFloor == -1 || destinationFloor == currentFloor { //enten har den ikke noen retning, eller så er den på riktig floor
 		//fmt.Print("\n\n\n\n SETTER DIRECTION TIL STOPP!! \n\n\n\n")
 		return elevio.MD_Stop
@@ -155,4 +157,37 @@ func ShouldStopAtFloor(elevator config.Elevator) bool{
 		return true
 	}
 	return false
+}
+
+func MasterSolver(elevatorMap map[int]*config.Elevator,elevID int, fsmCh config.FSMChannels){
+	masterExist := false
+	for{
+		masterExist = false
+		myRank := elevatorMap[elevID].ElevRank
+		//if elevatorMap[elevID].Active{}
+		for id,elev := range elevatorMap{
+			if elev.ElevRank == 1 && elev.Active{
+				masterExist = true
+			}
+			if id != elevID && elev.Active && elev.ElevRank == myRank{				
+				if myRank != 1{
+					myRank--
+				}else if myRank != 3{
+					myRank++
+				}
+				if myRank==1{
+					masterExist = true
+				}
+				elevatorMap[elevID].ElevRank = myRank //trenger jeg denne?
+				go func(){fsmCh.New_state <- *elevatorMap[elevID]}() 
+			}
+		}
+		if !masterExist{
+			myRank = 1
+			elevatorMap[elevID].ElevRank = myRank //trenger jeg denne?
+			go func(){fsmCh.New_state <- *elevatorMap[elevID]}() 
+		}
+		time.Sleep(time.Second)
+	}
+
 }

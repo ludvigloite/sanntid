@@ -54,23 +54,26 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
 
         if elevatorMap[elevID].HallOrders[floor][elevio.BT_HallUp]{ //Sender bare RemoveOrder om det er en ordre
           order.ButtonType = elevio.BT_HallUp
+          elevatorMap[elevID].HallOrders[floor][elevio.BT_HallUp] = false
           	for i:=0;i<config.NUM_PACKETS;i++{
           		netCh.TransmittOrderCh <- order
         	} 
         }
         if elevatorMap[elevID].HallOrders[floor][elevio.BT_HallDown]{ //Sender bare RemoveOrder om det er en ordre
           	order.ButtonType = elevio.BT_HallDown
+          	elevatorMap[elevID].HallOrders[floor][elevio.BT_HallDown] = false
           	for i:=0;i<config.NUM_PACKETS;i++{
         		netCh.TransmittOrderCh <- order
         	} 
         }
         if elevatorMap[elevID].CabOrders[floor]{ //Sender bare RemoveOrder om det er en ordre
           	order.ButtonType = elevio.BT_Cab
+          	elevatorMap[elevID].CabOrders[floor] = false
           	for i:=0;i<config.NUM_PACKETS;i++{
         		netCh.TransmittOrderCh <- order
         	} 
         }
-
+        fsmCh.LightUpdateCh <- true
     }
   }
 }
@@ -153,6 +156,9 @@ func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, e
 
         for _, peerStr := range p.Lost{
           peerInt, _ := strconv.Atoi(peerStr)
+          if peerInt == elevID{
+          	break
+          }
           elevatorMap[peerInt].Active = false
           cabOrdersBackup[peerStr] = elevatorMap[peerInt].CabOrders
           elevatorMap[peerInt].CurrentOrder.Floor = -1
