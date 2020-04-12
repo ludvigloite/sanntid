@@ -3,6 +3,7 @@
 2. Ved "ethernet-utdragning" vil heisen fullføre de nåværende ordre, men vil ikke ta flere.
 3. Trenger å teste at alt fungerer som planlagt og etter oppgavespesifikasjonene.
 4. Må kjøre vår egen Final Acceptance Test (FAT)
+5. Koden må ryddes og kommenteres.
 
 
 ## NYTTIG
