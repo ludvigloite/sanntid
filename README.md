@@ -1,7 +1,9 @@
 # STATUS
-1. Veldig mye funker nå, blant annet overtakelse av Master, CabOrder giveaway om en node kommer tilbake og at en annen heis tar oppgaven om en heis dør.
-2. Trenger å implementere og teste en del til, blant annet motor failure (WATCH DOG)
-3. Simulatoren klikket en del, blant annet ved at bildet viste at heisen sto stille mens den i "realiteten" bevegde seg, og dermed plutselig hoppa et stykke. Usikker på om dette er pga stort program(15 goroutines), dårlig nett for meg, eller dårlig Simulator..
+1. Nærmer oss veldig ferdig nå!!
+2. Ved "ethernet-utdragning" vil heisen fullføre de nåværende ordre, men vil ikke ta flere.
+3. Trenger å teste at alt fungerer som planlagt og etter oppgavespesifikasjonene.
+4. Må kjøre vår egen Final Acceptance Test (FAT)
+
 
 ## NYTTIG
 1. Legg til scripts i PATH
@@ -11,9 +13,9 @@ $ vim .bashrc
 ```
 Legg til følgende på bunn av fila:
 ```bash
-$ export PATH=$PATH:path/to/file    for eksempel ~/ for hjemmemappa eller ~/Simulator-v2
+$ export PATH=$PATH:path/to/file    for eksempel ~/sanntid/Simulator eller ~/sanntid/scripts
 ```
-Du kan nå kjøre scriptet uansett hvor du er i filsystemet
+Du kan nå kjøre programmet/scriptet uansett hvor du er i filsystemet
 
 2. Gjør scripts kjørbare:
 ```bash
