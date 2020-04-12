@@ -17,7 +17,7 @@ type PeerUpdate struct {
 }
 
 const interval = 15 * time.Millisecond
-const timeout = 50 * time.Millisecond
+const timeout = 500 * time.Millisecond
 
 // Transmitter(.) writes to conn after time interval if transmitEnable is enabeled
 func Transmitter(port int, id string, transmitEnable <-chan bool) {
