@@ -27,19 +27,26 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
         order.Should_add = true //Det er en ordre som skal legges til
         order.Receiver_elev = elevID
 
-        netCh.TransmittOrderCh <- order
+        for i:=0;i<config.NUM_PACKETS;i++{
+        	netCh.TransmittOrderCh <- order
+        }        
         //fmt.Println("Har nå sendt avgårde pakke om at knapp er trykket!")
 
         
 
       case newState := <-fsmCh.New_state:
         //newState er en Elevator Struct.
-        netCh.TransmittElevStateCh <- newState
+        for i:=0;i<config.NUM_PACKETS;i++{
+        	netCh.TransmittElevStateCh <- newState
+        } 
+        
         //fmt.Println("Sendt ny Elevstate ut")
 
       case newCurrentOrder := <- fsmCh.New_current_order:
         //newCurrentOrder er en Order struct.
-        netCh.TransmittCurrentOrderCh <- newCurrentOrder
+        for i:=0;i<config.NUM_PACKETS;i++{
+        	netCh.TransmittCurrentOrderCh <- newCurrentOrder
+        } 
 
       case floor := <-fsmCh.Stopping_at_floor:
 
@@ -51,17 +58,23 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
 
         if elevatorMap[elevID].HallOrders[floor][elevio.BT_HallUp]{ //Sender bare RemoveOrder om det er en ordre
           order.ButtonType = elevio.BT_HallUp
-          netCh.TransmittOrderCh <- order
+          	for i:=0;i<config.NUM_PACKETS;i++{
+          		netCh.TransmittOrderCh <- order
+        	} 
         }
 
         if elevatorMap[elevID].HallOrders[floor][elevio.BT_HallDown]{ //Sender bare RemoveOrder om det er en ordre
-          order.ButtonType = elevio.BT_HallDown
-          netCh.TransmittOrderCh <- order
+          	order.ButtonType = elevio.BT_HallDown
+          	for i:=0;i<config.NUM_PACKETS;i++{
+        		netCh.TransmittOrderCh <- order
+        	} 
         }
 
         if elevatorMap[elevID].CabOrders[floor]{ //Sender bare RemoveOrder om det er en ordre
-          order.ButtonType = elevio.BT_Cab
-          netCh.TransmittOrderCh <- order
+          	order.ButtonType = elevio.BT_Cab
+          	for i:=0;i<config.NUM_PACKETS;i++{
+        		netCh.TransmittOrderCh <- order
+        	} 
         }
     }
   }
@@ -79,15 +92,19 @@ func SendOrdersWhenComeback(netCh config.NetworkChannels, elevatorMap map[int]*c
 
   for i := 0; i < config.NUM_FLOORS; i++{
     if cabOrdersBackup[comebackElev][i]{
-      order.Floor = i
-      order.ButtonType = elevio.BT_Cab
-      netCh.TransmittOrderCh <- order
+      	order.Floor = i
+      	order.ButtonType = elevio.BT_Cab
+      	for i:=0;i<config.NUM_PACKETS;i++{
+        	netCh.TransmittOrderCh <- order
+        } 
     }
     for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
       if elevatorMap[senderElev].HallOrders[i][j]{
         order.Floor = i
         order.ButtonType = j
-        netCh.TransmittOrderCh <- order
+        for i:=0;i<config.NUM_PACKETS;i++{
+        	netCh.TransmittOrderCh <- order
+        } 
       }
     }
   }
@@ -130,7 +147,9 @@ func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, e
       //HAR DET KOMMET NOEN FLERE ELEVATORS TIL?
       if len(p.New) > 0{
         fsmCh.New_state <- *elevatorMap[elevID] //om det kommer noen nye må du sende ut deg selv sånn at de kan legge deg til!
-        ch.TransmittCabOrderBackupCh <- cabOrdersBackup //sender cabOrderBackup slik at alle vet om det.
+        for i:=0;i<config.NUM_PACKETS;i++{
+        	ch.TransmittCabOrderBackupCh <- cabOrdersBackup //sender cabOrderBackup slik at alle vet om det.
+        } 
         //peerInt,_ := strconv.Atoi(p.New)
         SendOrdersWhenComeback(ch, elevatorMap, p.New, elevID, cabOrdersBackup)
       }
