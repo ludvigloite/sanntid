@@ -9,12 +9,13 @@ import(
 )
 
 func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator, masterElev int, currentElev int) config.Order{
-	newOrder := config.Order{}
-	newOrder.Sender_elev_ID = masterElev
-	newOrder.Sender_elev_rank = 1
-	newOrder.Receiver_elev = currentElev
-	newOrder.Floor = -1
-	newOrder.ButtonType = elevio.BT_HallDown
+	newOrder := config.Order{
+		Sender_elev_ID: masterElev,
+		Sender_elev_rank: 1,
+		Receiver_elev: currentElev,
+		Floor: -1,
+		ButtonType: elevio.BT_HallDown,
+	}
 
 	currentFloor := elevator.CurrentFloor
 	if currentFloor == -1{
@@ -69,20 +70,17 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 		}
 	}else{ //DEN GÅR NEDOVER!
 		if elevator.CabOrders[0]{ //sjekker om det er en caborder i 1 etasje!
-			//fmt.Println("Det er en caborder")
 			newOrder.Floor = 0
 			newOrder.ButtonType = elevio.BT_Cab
 			return newOrder
 		}
 		for i := 1; i < config.NUM_FLOORS; i++{ //går fra 2 etasje til 4 etasje
 			if elevator.CabOrders[i]{
-				//fmt.Println("Det er en caborder")
 				newOrder.Floor = i
 				newOrder.ButtonType = elevio.BT_Cab
 				return newOrder
 			}
 			if elevator.HallOrders[i][elevio.BT_HallDown]{
-				//fmt.Println("Det er en ordre på NED knapp")
 				if !AnotherGoingToFloor(i, elevatorMap){
 					newOrder.Floor = i
 					newOrder.ButtonType = elevio.BT_HallDown
@@ -92,11 +90,9 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 		}
 		for i := config.NUM_FLOORS-2; i > -1; i--{ //går fra 3 etasje til 1 etasje. Øverste etasje kan ikke ha opp-knapp!
 			if elevator.HallOrders[i][elevio.BT_HallUp]{
-				//fmt.Println("Det er en ordre på OPP knapp")
 				if !AnotherGoingToFloor(i,elevatorMap){
 					newOrder.Floor = i
 					newOrder.ButtonType = elevio.BT_HallUp
-					//fmt.Println("GÅR NED. JOBB OPP")
 					return newOrder
 				}
 			}
@@ -119,7 +115,7 @@ func Arbitrator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.E
 	order := config.Order{}
 	for{
 		if elevatorMap[elevID].ElevRank == 1{
-			for i, elevator := range elevatorMap{ //går gjennom heisene. USIKKER PÅ OM DETTE FUNKER..
+			for i, elevator := range elevatorMap{ //går gjennom heisene.
 				if elevator.Active{
 					if elevator.CurrentOrder.Floor == -1{
 
@@ -127,11 +123,8 @@ func Arbitrator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.E
 						order = GetNewOrder(*elevator, elevatorMap, elevID, i)
 						
 						if order.Floor != -1{
-
 							elevatorMap[i].CurrentOrder = order
-							//fmt.Println("Ny currentOrder til heis nr ",i)
 							ch.New_current_order <- order
-							//ch.New_state <- *elevatorMap[i]	
 						}
 					}
 				}

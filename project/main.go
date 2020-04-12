@@ -37,14 +37,12 @@ func main(){
     elevio.Init("localhost:"+port, config.NUM_FLOORS)
 
     elevatorMap := make(map[int]*config.Elevator)
-    //activeElevators := make(map[int]bool) //activeElevators[elevID] = false/true)
-    //kanskje må disse initialiseres til at alle er unactive. De vil få riktig konfig med en gang de får første beskjeden om hvilke som er active.
 
     elevator := config.Elevator{
         Active: false,
         ElevID: elevID,
         ElevRank: -1, //Dette fikses ved at man sjekker hvor mange heiser som er online.
-        CurrentOrder: config.Order{Floor:-1, ButtonType:-1}, //usikker på om denne initialiseringen funker.
+        CurrentOrder: config.Order{Floor:-1, ButtonType:-1},
         CurrentFloor: -1,
         CurrentDir: elevio.MD_Down,
         CurrentState: config.IDLE,
@@ -118,5 +116,5 @@ func main(){
     //go elevcontroller.PrintElevators_withTime(elevatorMap, config.SEND_ELEV_CYCLE)
 
 
-    fsm.RunElevator(fsmChannels, elevID, elevatorMap, &elevator) //kjøre som go?
+    fsm.RunElevator(fsmChannels, elevID, elevatorMap, &elevator)
 }

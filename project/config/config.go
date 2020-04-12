@@ -34,13 +34,14 @@ const(
 	DOOR_OPEN 	= 2
 	UNDEFINED 	= 3
 )
-/*
-type Type_Action int
+
+/*type Type_Action int
 const{
 	ADD Type_Action = 1
 	REMOVE = -1
 }*/
 
+//HER BØR TING FJERNES PÅ FERDIG HEIS. TRENGER VI PACKET_ID FEKS?
 type Order struct{
 	Sender_elev_ID 		int
 	Sender_elev_rank 	int
@@ -51,6 +52,7 @@ type Order struct{
 	Approved 			bool
 	Receiver_elev 		int
 }
+
 
 /*type ButtonType int
 const (

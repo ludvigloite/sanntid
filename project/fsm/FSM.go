@@ -69,8 +69,6 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			
 			destination := elevatorMap[elevID].CurrentOrder
 			if destination.Floor != -1{
-				//fmt.Println("Jeg har fått en oppgave i etasje ",destination.Floor,"! Denne skal jeg utføre")
-
 				elevatorMap[elevID].CurrentDir = elevcontroller.GetDirection(*elevatorMap[elevID]) //kanskje jeg må bruke destination istedet for elevator.CurrentOrder. Ting kan fucke segf om currentorder endres! 
 
 				elevio.SetMotorDirection(elevatorMap[elevID].CurrentDir)
@@ -82,13 +80,12 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 
 		case config.ACTIVE:
 			select{
-			case reachedFloor := <- ch.Drv_floors: //treffet et floor
-				//fmt.Println("Passerte etasje ", reachedFloor)
+			case reachedFloor := <- ch.Drv_floors:
 				elevio.SetFloorIndicator(reachedFloor)
 				elevatorMap[elevID].CurrentFloor = reachedFloor
 
 				if elevcontroller.ShouldStopAtFloor(*elevatorMap[elevID]){
-					//fmt.Println("stopping at floor")
+					//Stopping at floor
 
 					elevio.SetDoorOpenLamp(true)
 					ch.Open_door <- true
@@ -102,7 +99,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			default:
 
 				if elevatorMap[elevID].CurrentDir == elevio.MD_Stop{
-					//fmt.Println("stopping at floor I am already in")
+					//Kommet ny ordre i etasje heis allerede er i
 
 					elevio.SetDoorOpenLamp(true)
 					ch.Open_door <- true
@@ -122,14 +119,12 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			select{
 			case <- ch.Close_door:
 	
-				//fmt.Println("closing door__")
 				elevio.SetDoorOpenLamp(false) //slår av lys
 
 				elevatorMap[elevID].CurrentState = config.IDLE
 
 				if elevatorMap[elevID].CurrentOrder.Floor == elevatorMap[elevID].CurrentFloor{
 					elevatorMap[elevID].CurrentOrder.Floor = -1 //Fjerner currentOrder, siden den har utført den.
-					//fmt.Println("CurrentOrder er fjernet!")
 				}
 
 				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
