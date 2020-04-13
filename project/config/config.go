@@ -8,12 +8,17 @@ import(
 )
 
 const(
+	SHOW_ORDERS_WHEN_NETWORK_DOWN = false
+	ADD_HALL_ORDERS_WHEN_NETWORK_DOWN = true
+)
+
+const(
 	NUM_FLOORS 			= 4
 	NUM_HALLBUTTONS 	= 2
 	NUM_ELEVATORS		= 3
 	DOOR_OPEN_TIME 		= 3 * time.Second
 	SEND_ELEV_CYCLE		= 5 * time.Second
-	NUM_PACKETS			= 3
+	NUM_PACKETS_SENT	= 3
 	WATCHDOG_TIME		= 8 * time.Second
 )
 
@@ -23,8 +28,6 @@ const(
 	BROADCAST_CURRENT_ORDER_PORT	= 12348
 	BROADCAST_ELEV_STATE_PORT		= 12349
 	BROADCAST_CAB_BACKUP_PORT		= 12350
-	//BROADCAST_INTERVAL 				= 200 * time.Millisecond
-
 )
 
 type State int
@@ -64,12 +67,13 @@ const (
 type Elevator struct{
 	Active bool
 	Stuck bool
+	NetworkDown bool
 	ElevID int
 	ElevRank int
 	CurrentOrder Order
 	CurrentFloor int
 	CurrentDir elevio.MotorDirection
-	CurrentState State
+	CurrentFsmState State
 	CabOrders [NUM_FLOORS]bool
 	HallOrders [NUM_FLOORS][NUM_HALLBUTTONS]bool
 }

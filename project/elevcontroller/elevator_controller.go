@@ -8,51 +8,10 @@ import(
 	"time"
 	//"math/rand"
 )
-/*
-func RankChecker2(elevID int, elevatorMap map[int]*config.Elevator){
-
-	NuActiveElevators := 0
-	for !elevatorMap[elevID].Active{}
-
-
-	for _, elevator := range elevatorMap{
-		if elevator.Active{
-			NuActiveElevators++
-		}
-	}
-	elevatorMap[elevID].ElevRank = NuActiveElevators
-
-}
-
-func RankChecker(elevatorMap map[int]*config.Elevator){ //kjøres som goroutine. Sjekker at det alltid er en og kun en master.
-	ID_to_Master := -1
-	nuMasters := 0
-	for{
-		nuMasters = 0
-		for i, elevator := range elevatorMap{
-			if elevator.ElevRank == 1{
-				nuMasters++
-				ID_to_Master = i
-			}
-		}
-		if nuMasters == 0{
-			for i, elevator := range elevatorMap{
-				if elevator.Active{
-					nuMasters++
-					ID_to_Master = i
-				}
-			}
-		}
-		if nuMasters > 1{
-
-		}
-	}
-}
-*/
 
 func Initialize(elevator *config.Elevator){
 	elevio.SetMotorDirection(elevio.MD_Down)
-	ResetLights()	
+	ResetLights()
 	InitQueues(elevator)
 }
 
@@ -66,7 +25,6 @@ func InitQueues(elevator *config.Elevator){
 	}
 }
 
-//Kan vel kanskje i stedet bare fjerne alle ordre og så kjøre update lights??
 func ResetLights(){	//Slår av lyset på alle lys
 	numFloors := config.NUM_FLOORS
 	elevio.SetDoorOpenLamp(false)
@@ -82,22 +40,6 @@ func ResetLights(){	//Slår av lyset på alle lys
 
 }
 
-func PrintElevator(elevator config.Elevator){
-	fmt.Println()
-	fmt.Println("elevID: ",elevator.ElevID,"\t Rank: ",elevator.ElevRank)
-	fmt.Println("CurrentOrder = Floor: ",elevator.CurrentOrder.Floor, "\t ButtonType: ",elevator.CurrentOrder.ButtonType)
-	fmt.Println("CurrentFloor = ", elevator.CurrentFloor)
-	fmt.Println("CurrentState = ", elevator.CurrentState)
-	fmt.Println("Hallorders   = ")
-	for i := 0; i< config.NUM_FLOORS;i++{
-		for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
-			fmt.Print(elevator.HallOrders[i][j],"\t")
-		}
-		fmt.Println()
-	}
-	fmt.Println()
-}
-
 func PrintElevators_withTime(elevatorMap map[int]*config.Elevator, openTime time.Duration){
 	for{
 		for _, elevator := range elevatorMap{
@@ -106,7 +48,7 @@ func PrintElevators_withTime(elevatorMap map[int]*config.Elevator, openTime time
 			fmt.Println("Active? ",elevator.Active, "\t Stuck? ", elevator.Stuck)
 			fmt.Println("CurrentOrder = Floor: ",elevator.CurrentOrder.Floor, "\t ButtonType: ",elevator.CurrentOrder.ButtonType)
 			fmt.Println("CurrentFloor = ", elevator.CurrentFloor)
-			fmt.Println("CurrentState = ", elevator.CurrentState)
+			fmt.Println("CurrentFsmState = ", elevator.CurrentFsmState)
 			fmt.Println("Hallorders   = ")
 			for i := 0; i< config.NUM_FLOORS;i++{
 				for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
@@ -126,7 +68,6 @@ func GetDirection(elevator config.Elevator) elevio.MotorDirection{
 	destinationFloor := elevator.CurrentOrder.Floor
 
 	if destinationFloor == -1 || destinationFloor == currentFloor { //enten har den ikke noen retning, eller så er den på riktig floor
-		//fmt.Print("\n\n\n\n SETTER DIRECTION TIL STOPP!! \n\n\n\n")
 		return elevio.MD_Stop
 
 	} else if currentFloor < destinationFloor { //heisen er lavere enn sin destinasjon -> kjører oppover
@@ -140,8 +81,8 @@ func GetDirection(elevator config.Elevator) elevio.MotorDirection{
 func ShouldStopAtFloor(elevator config.Elevator) bool{
 	currentFloor := elevator.CurrentFloor
 	dir := elevator.CurrentDir
-	destinationFloor := elevator.CurrentOrder.Floor
-	if currentFloor == destinationFloor || currentFloor == 0 || currentFloor == 3{
+	//destinationFloor := elevator.CurrentOrder.Floor
+	if currentFloor == 0 || currentFloor == 3{ //	if currentFloor == destinationFloor || currentFloor == 0 || currentFloor == 3{
 		return true
 	}
 	if dir == elevio.MD_Stop{ //har ingen ordre eller er på etasjen currentOrder tilsier. KAN FØRE TIL ERROR!!
@@ -159,12 +100,12 @@ func ShouldStopAtFloor(elevator config.Elevator) bool{
 	return false
 }
 
-func MasterSolver(elevatorMap map[int]*config.Elevator,elevID int, fsmCh config.FSMChannels){
+func RankSolver(elevatorMap map[int]*config.Elevator,elevID int, fsmCh config.FSMChannels){
 	masterExist := false
 	for{
 		masterExist = false
 		myRank := elevatorMap[elevID].ElevRank
-		//if elevatorMap[elevID].Active{}
+
 		for id,elev := range elevatorMap{
 			if elev.ElevRank == 1 && elev.Active{
 				masterExist = true
@@ -179,12 +120,14 @@ func MasterSolver(elevatorMap map[int]*config.Elevator,elevID int, fsmCh config.
 					masterExist = true
 				}
 				elevatorMap[elevID].ElevRank = myRank //trenger jeg denne?
+				//fmt.Println("Jeg har nå rank ",myRank)
 				go func(){fsmCh.New_state <- *elevatorMap[elevID]}() 
 			}
 		}
 		if !masterExist{
 			myRank = 1
 			elevatorMap[elevID].ElevRank = myRank //trenger jeg denne?
+			//fmt.Println("Jeg har nå rank ",myRank)
 			go func(){fsmCh.New_state <- *elevatorMap[elevID]}() 
 		}
 		time.Sleep(time.Second)

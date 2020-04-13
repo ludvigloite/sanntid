@@ -32,13 +32,13 @@ func WatchDogTimer(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevI
 	WatchDogTimer := time.NewTimer(watchDogTime)
 
   //empty the channel -> not concurrent receivers
-	if !WatchDogTimer.Stop() && elevatorMap[elevID].CurrentOrder.Floor != -1 && elevatorMap[elevID].CurrentState == config.ACTIVE {
+	if !WatchDogTimer.Stop() && elevatorMap[elevID].CurrentOrder.Floor != -1 && elevatorMap[elevID].CurrentFsmState == config.ACTIVE {
 		<-WatchDogTimer.C
 	}
 
 	go func(){
 		for{
-			if elevatorMap[elevID].CurrentState != config.ACTIVE{
+			if elevatorMap[elevID].CurrentFsmState != config.ACTIVE{
 				WatchDogTimer.Stop()
 				WatchDogTimer.Reset(watchDogTime)
 				time.Sleep(time.Second)

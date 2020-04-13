@@ -19,10 +19,11 @@ import(
     "time"
 )
 
-//KANSKJE LAGE EN FUNKSJON SOM HELE TIDEN SJEKKER AT EN OG BARE EN HEIS ER MASTER
-//KANSKJE LAGE EN FUNKSJON SOM SJEKKER AT CURRENTORDER IKKE ER TATT AV NOEN SOM ER INAKTIVE. EVT WATCHDOG.
 
 func main(){
+
+	fmt.Print("In Case of Network Shutdown: \nShow Orders: ",config.SHOW_ORDERS_WHEN_NETWORK_DOWN,"\tAdd HallOrders: ", config.ADD_HALL_ORDERS_WHEN_NETWORK_DOWN, "\n\n")
+	
 
     elevIDPtr := flag.Int("elevID",42,"elevator ID")
     portPtr := flag.String("port","","port to connect to Simulator")
@@ -40,12 +41,14 @@ func main(){
 
     elevator := config.Elevator{
         Active: false,
+        Stuck: false,
+        NetworkDown: true, //dette for at det allerede er nettverkstrøbbel ved programstart.
         ElevID: elevID,
         ElevRank: -1, //Dette fikses ved at man sjekker hvor mange heiser som er online.
         CurrentOrder: config.Order{Floor:-1, ButtonType:-1},
         CurrentFloor: -1,
         CurrentDir: elevio.MD_Down,
-        CurrentState: config.IDLE,
+        CurrentFsmState: config.IDLE,
         CabOrders: [config.NUM_FLOORS]bool{},
         HallOrders: [config.NUM_FLOORS][config.NUM_HALLBUTTONS]bool{},
     }
@@ -115,7 +118,7 @@ func main(){
     go network.Receiver(networkChannels,fsmChannels, elevID, elevatorMap)
     go arbitrator.Arbitrator(fsmChannels, elevID, elevatorMap)
 
-    go elevcontroller.MasterSolver(elevatorMap, elevID, fsmChannels)
+    go elevcontroller.RankSolver(elevatorMap, elevID, fsmChannels)
 
     //go elevcontroller.PrintElevators_withTime(elevatorMap, config.SEND_ELEV_CYCLE)
 

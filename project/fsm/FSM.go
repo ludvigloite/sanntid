@@ -8,10 +8,6 @@ import(
 	"../elevcontroller"
 )
 
-
-//Greia er at den sender updates om seg selv over nett, og dermed ikke klarer å fange opp det siden nettete er nede...
-
-
 func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator, elevator *config.Elevator){
 	
     /* 		INIT 	*/
@@ -22,34 +18,6 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 	for floor == -1{
 		floor = <- ch.Drv_floors
 	}
-
-	NuActiveElevators := 0
-	elevator.Active = true
-
-	
-	for _, elev := range elevatorMap{
-		if elev.Active{
-			NuActiveElevators++
-		}
-	}
-	nuIdenticalRank := -1
-	for nuIdenticalRank != 0{
-		nuIdenticalRank = 0
-		for _,elev := range elevatorMap{
-			if elev.Active && elev.ElevRank == NuActiveElevators{
-				nuIdenticalRank ++
-				if NuActiveElevators != 1{
-					NuActiveElevators--
-				}else if NuActiveElevators != 3{
-					NuActiveElevators++
-				}
-			}
-		}
-	}
-	
-
-    elevator.ElevRank = NuActiveElevators
-    fmt.Println("JEG HAR RANK ",elevator.ElevRank)
 
 	elevio.SetMotorDirection(elevio.MD_Stop)
 	elevio.SetFloorIndicator(floor)
@@ -65,14 +33,14 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 
 	for{
 
-		switch elevatorMap[elevID].CurrentState{
+		switch elevatorMap[elevID].CurrentFsmState{
 		case config.IDLE:
 			
 			destination := elevatorMap[elevID].CurrentOrder
 			if destination.Floor != -1{
 				elevatorMap[elevID].CurrentDir = elevcontroller.GetDirection(*elevatorMap[elevID]) //kanskje jeg må bruke destination istedet for elevator.CurrentOrder. Ting kan fucke segf om currentorder endres! 
 				elevio.SetMotorDirection(elevatorMap[elevID].CurrentDir)
-				elevatorMap[elevID].CurrentState = config.ACTIVE
+				elevatorMap[elevID].CurrentFsmState = config.ACTIVE
 
 				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
 
@@ -93,7 +61,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 					elevio.SetDoorOpenLamp(true)
 					ch.Open_door <- true
 					elevio.SetMotorDirection(elevio.MD_Stop)
-					elevatorMap[elevID].CurrentState = config.DOOR_OPEN
+					elevatorMap[elevID].CurrentFsmState = config.DOOR_OPEN
 
 
 					ch.Stopping_at_floor <- reachedFloor //sender til de andre heisene slik at de kan slette alt i den etasjen.
@@ -111,7 +79,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 					ch.Stopping_at_floor <- elevatorMap[elevID].CurrentFloor
 
 					elevio.SetMotorDirection(elevio.MD_Stop)
-					elevatorMap[elevID].CurrentState = config.DOOR_OPEN
+					elevatorMap[elevID].CurrentFsmState = config.DOOR_OPEN
 					
 					go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
 				}
@@ -125,7 +93,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			case <- ch.Close_door:	
 				elevio.SetDoorOpenLamp(false) //slår av lys
 
-				elevatorMap[elevID].CurrentState = config.IDLE
+				elevatorMap[elevID].CurrentFsmState = config.IDLE
 
 				if elevatorMap[elevID].CurrentOrder.Floor == elevatorMap[elevID].CurrentFloor{
 					elevatorMap[elevID].CurrentOrder.Floor = -1 //Fjerner currentOrder, siden den har utført den.
