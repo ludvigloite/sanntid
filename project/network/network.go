@@ -1,13 +1,12 @@
 package network
 
 import (
-  "../config"
-  "../elevio"
-  "fmt"
-  "math/rand"
-  "strconv"
-  //"../elevcontroller"
-  
+	"fmt"
+  	"strconv"
+
+
+  	"../config"
+  	"../elevio"
 )
 
 func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, elevatorMap map[int]*config.Elevator){
@@ -21,7 +20,6 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
         order.Sender_elev_rank = elevatorMap[elevID].ElevRank
         order.Floor = buttonPress.Floor
         order.ButtonType = buttonPress.Button
-        order.Packet_id = rand.Intn(10000)
         order.Should_add = true //Det er en ordre som skal legges til
         order.Receiver_elev = elevID
 
@@ -56,7 +54,6 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
 
         order.Sender_elev_rank = elevatorMap[elevID].ElevRank
         order.Floor = floor
-        order.Packet_id = rand.Intn(10000)
         order.Should_add = false //Det er en ordre som skal fjernes
         order.Receiver_elev = elevID
 
@@ -86,13 +83,102 @@ func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, 
   }
 }
 
+
+func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, elevatorMap map[int]*config.Elevator){
+
+  cabOrdersBackup := make(map[string][config.NUM_FLOORS]bool) //måtte være indeksert på string for å sendes med JSON
+
+  for{
+    select{
+    case p := <-netCh.PeerUpdateCh:
+      fmt.Printf("Peer update:\n")
+      fmt.Printf("  Peers:    %q\n", p.Peers)
+      fmt.Printf("  New:      %q\n", p.New)
+      fmt.Printf("  Lost:     %q\n", p.Lost)
+
+      //GÅR GJENNOM ALLE SOM ER ACTIVE
+      for _, peerStr := range p.Peers{
+        peerInt, _ := strconv.Atoi(peerStr)
+        elevatorMap[peerInt].Active = true
+      }
+
+      if len(p.Peers) == 0{ //network failure!!
+      	elevatorMap[elevID].NetworkDown = true
+      	fsmCh.LightUpdateCh <- true
+      }else{
+      	elevatorMap[elevID].NetworkDown = false
+      }
+
+
+      //HAR DET KOMMET NOEN FLERE ELEVATORS TIL?
+      if len(p.New) > 0{
+        fsmCh.New_state <- *elevatorMap[elevID] //om det kommer noen nye må du sende ut deg selv sånn at de kan legge deg til!
+        for i:=0;i<config.NUM_PACKETS_SENT;i++{
+        	netCh.TransmittCabOrderBackupCh <- cabOrdersBackup //sender cabOrderBackup slik at alle vet om det.
+        } 
+        SendOrdersWhenComeback(netCh, elevatorMap, p.New, elevID, cabOrdersBackup)
+      }
+    
+
+      //HAR VI MISTET NOEN ELEVATORS?
+      if len(p.Lost) > 0{
+
+        for _, peerStr := range p.Lost{
+          peerInt, _ := strconv.Atoi(peerStr)
+          if peerInt == elevID{
+          	break
+          }
+          elevatorMap[peerInt].Active = false
+          cabOrdersBackup[peerStr] = elevatorMap[peerInt].CabOrders
+          elevatorMap[peerInt].CurrentOrder.Floor = -1
+          fsmCh.New_current_order <- config.Order{Sender_elev_ID: elevID, Floor: -1, Receiver_elev: peerInt}
+
+        }
+        fsmCh.New_state <- *elevatorMap[elevID] //Alle må vite om din nye rank
+      }
+
+
+    case newCabOrderBackup := <-netCh.ReceiveCabOrderBackupCh:
+      cabOrdersBackup = MergeCaborders(cabOrdersBackup, newCabOrderBackup)
+
+
+    case receivedOrder := <-netCh.ReceiveOrderCh:
+      
+      if receivedOrder.ButtonType == elevio.BT_Cab{
+        elevatorMap[receivedOrder.Receiver_elev].CabOrders[receivedOrder.Floor] = receivedOrder.Should_add
+        if receivedOrder.Receiver_elev == elevID{
+           fsmCh.LightUpdateCh <- true
+        }
+      }else{
+        if elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] != receivedOrder.Should_add{
+          elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] = receivedOrder.Should_add
+          fsmCh.LightUpdateCh <- true
+        }
+      }
+
+      go func(){fsmCh.New_state <- *elevatorMap[elevID]}()
+
+
+    case elevator := <-netCh.ReceiveElevStateCh:
+      if elevator.ElevID != elevID{
+        *elevatorMap[elevator.ElevID] = elevator
+      }
+
+    case newCurrentOrder := <-netCh.ReceiveCurrentOrderCh:
+      elevatorMap[newCurrentOrder.Receiver_elev].CurrentOrder = newCurrentOrder
+
+
+
+    }
+  }
+}
+
 func SendOrdersWhenComeback(netCh config.NetworkChannels, elevatorMap map[int]*config.Elevator, comebackElev string, senderElev int, cabOrdersBackup map[string][config.NUM_FLOORS]bool){
   comebackElevInt,_ := strconv.Atoi(comebackElev)
   order := config.Order{}
   order.Sender_elev_ID = senderElev
   order.Sender_elev_rank = elevatorMap[senderElev].ElevRank
-  order.Packet_id = rand.Intn(10000) //DETTE FUNKER IKKE!! ALLE PAKKENE FÅR SAMME PACKET_ID!
-  order.Should_add = true //Det er en ordre som skal legges til
+  order.Should_add = true
   order.Receiver_elev = comebackElevInt
 
   for i := 0; i < config.NUM_FLOORS; i++{
@@ -128,106 +214,3 @@ func MergeCaborders(cabOrders1 map[string][config.NUM_FLOORS]bool, cabOrders2 ma
   }
   return cabOrders
 }
-
-
-func Receiver(ch config.NetworkChannels, fsmCh config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator){
-
-  cabOrdersBackup := make(map[string][config.NUM_FLOORS]bool) //måtte være indeksert på string for å sendes med JSON
-
-  for{
-    select{
-    case p := <-ch.PeerUpdateCh:
-      fmt.Printf("Peer update:\n")
-      fmt.Printf("  Peers:    %q\n", p.Peers)
-      fmt.Printf("  New:      %q\n", p.New)
-      fmt.Printf("  Lost:     %q\n", p.Lost)
-
-      //GÅR GJENNOM ALLE SOM ER ACTIVE
-      for _, peerStr := range p.Peers{
-        peerInt, _ := strconv.Atoi(peerStr)
-        elevatorMap[peerInt].Active = true
-      }
-
-      if len(p.Peers) == 0{ //network failure!!
-      	elevatorMap[elevID].NetworkDown = true
-      	fsmCh.LightUpdateCh <- true
-      }else{
-      	elevatorMap[elevID].NetworkDown = false
-      }
-
-
-      //HAR DET KOMMET NOEN FLERE ELEVATORS TIL?
-      if len(p.New) > 0{
-        fsmCh.New_state <- *elevatorMap[elevID] //om det kommer noen nye må du sende ut deg selv sånn at de kan legge deg til!
-        for i:=0;i<config.NUM_PACKETS_SENT;i++{
-        	ch.TransmittCabOrderBackupCh <- cabOrdersBackup //sender cabOrderBackup slik at alle vet om det.
-        } 
-        SendOrdersWhenComeback(ch, elevatorMap, p.New, elevID, cabOrdersBackup)
-      }
-    
-
-      //HAR VI MISTET NOEN ELEVATORS?
-      if len(p.Lost) > 0{
-
-        for _, peerStr := range p.Lost{
-          peerInt, _ := strconv.Atoi(peerStr)
-          if peerInt == elevID{
-          	break
-          }
-          elevatorMap[peerInt].Active = false
-          cabOrdersBackup[peerStr] = elevatorMap[peerInt].CabOrders
-          elevatorMap[peerInt].CurrentOrder.Floor = -1
-          fsmCh.New_current_order <- config.Order{Sender_elev_ID: elevID, Floor: -1, Receiver_elev: peerInt}
-
-        }
-        fsmCh.New_state <- *elevatorMap[elevID] //Alle må vite om din nye rank
-      }
-
-
-    case newCabOrderBackup := <-ch.ReceiveCabOrderBackupCh:
-      cabOrdersBackup = MergeCaborders(cabOrdersBackup, newCabOrderBackup)
-
-
-    case receivedOrder := <-ch.ReceiveOrderCh:
-      
-      if receivedOrder.ButtonType == elevio.BT_Cab{
-        elevatorMap[receivedOrder.Receiver_elev].CabOrders[receivedOrder.Floor] = receivedOrder.Should_add
-        if receivedOrder.Receiver_elev == elevID{
-           fsmCh.LightUpdateCh <- true
-        }
-      }else{
-        if elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] != receivedOrder.Should_add{
-          elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] = receivedOrder.Should_add
-          fsmCh.LightUpdateCh <- true
-        }
-      }
-
-      go func(){fsmCh.New_state <- *elevatorMap[elevID]}()
-
-
-    case elevator := <-ch.ReceiveElevStateCh:
-      if elevator.ElevID != elevID{
-        *elevatorMap[elevator.ElevID] = elevator
-      }
-
-    case newCurrentOrder := <-ch.ReceiveCurrentOrderCh:
-      elevatorMap[newCurrentOrder.Receiver_elev].CurrentOrder = newCurrentOrder
-
-
-
-    }
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,12 +1,66 @@
 package arbitrator
 
 import(
-	//"fmt"
+	"time"
+
+
 	"../config"
 	"../elevio"
-	//"time"
-	//"../elevcontroller"
 )
+
+func RankSolver(fsmCh config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator){
+	masterExist := false
+	for{
+		masterExist = false
+		myRank := elevatorMap[elevID].ElevRank
+
+		for id,elev := range elevatorMap{
+			if elev.ElevRank == 1 && elev.Active{
+				masterExist = true
+			}
+			if id != elevID && elev.Active && elev.ElevRank == myRank{				
+				if myRank != 1{
+					myRank--
+				}else if myRank != 3{
+					myRank++
+				}
+				if myRank==1{
+					masterExist = true
+				}
+				elevatorMap[elevID].ElevRank = myRank
+				go func(){fsmCh.New_state <- *elevatorMap[elevID]}() 
+			}
+		}
+		if !masterExist{
+			myRank = 1
+			elevatorMap[elevID].ElevRank = myRank
+			go func(){fsmCh.New_state <- *elevatorMap[elevID]}() 
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func Arbitrator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator){ //kjøres bare av Master. Master kan bytte underveis. Derfor må det sjekkes hver gang og den må være inni while-loopen // KJØRES SOM GOROUNTINE
+	order := config.Order{}
+	for{
+		if elevatorMap[elevID].ElevRank == 1{
+			for i, elevator := range elevatorMap{ //går gjennom heisene.
+				if elevator.Active && !elevator.Stuck{
+					if elevator.CurrentOrder.Floor == -1{
+
+						//Heis har ingen current orders! Finnes det noen nye ordre?
+						order = GetNewOrder(*elevator, elevatorMap, elevID, i)
+						
+						if order.Floor != -1{
+							elevatorMap[i].CurrentOrder = order
+							ch.New_current_order <- order
+						}
+					}
+				}
+			}
+		}
+	}
+}
 
 func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator, masterElev int, currentElev int) config.Order{
 	newOrder := config.Order{
@@ -109,26 +163,4 @@ func AnotherGoingToFloor(floor int, elevatorMap map[int]*config.Elevator) bool{
 		}
 	}
 	return false
-}
-
-func Arbitrator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator){ //kjøres bare av Master. Master kan bytte underveis. Derfor må det sjekkes hver gang og den må være inni while-loopen // KJØRES SOM GOROUNTINE
-	order := config.Order{}
-	for{
-		if elevatorMap[elevID].ElevRank == 1{
-			for i, elevator := range elevatorMap{ //går gjennom heisene.
-				if elevator.Active && !elevator.Stuck{
-					if elevator.CurrentOrder.Floor == -1{
-
-						//Heis har ingen current orders! Finnes det noen nye ordre?
-						order = GetNewOrder(*elevator, elevatorMap, elevID, i)
-						
-						if order.Floor != -1{
-							elevatorMap[i].CurrentOrder = order
-							ch.New_current_order <- order
-						}
-					}
-				}
-			}
-		}
-	}
 }

@@ -2,7 +2,8 @@ package fsm
 
 import(
 	"fmt"
-	//"../orderhandler"
+	
+
 	"../elevio"
 	"../config"
 	"../elevcontroller"
@@ -10,7 +11,7 @@ import(
 
 func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator, elevator *config.Elevator){
 	
-    /* 		INIT 	*/
+    /* 		INIT 			*/
 
 	elevcontroller.Initialize(elevator)
 
@@ -22,14 +23,13 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 	elevio.SetMotorDirection(elevio.MD_Stop)
 	elevio.SetFloorIndicator(floor)
 	elevator.CurrentFloor = floor //Siden det er snakk om pekere vil dette være det samme som elevatorMap[elevID].CurrentFloor = floor
-	
-	/*		INIT FERDIG		*/
 
 	ch.New_state <- *elevator
 
-
 	fmt.Println("Heisen er intialisert og venter i etasje nr ", floor)
 	fmt.Println()
+
+	/*		INIT FERDIG		*/
 
 	for{
 
@@ -38,7 +38,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			
 			destination := elevatorMap[elevID].CurrentOrder
 			if destination.Floor != -1{
-				elevatorMap[elevID].CurrentDir = elevcontroller.GetDirection(*elevatorMap[elevID]) //kanskje jeg må bruke destination istedet for elevator.CurrentOrder. Ting kan fucke segf om currentorder endres! 
+				elevatorMap[elevID].CurrentDir = elevcontroller.GetDirection(*elevatorMap[elevID]) 
 				elevio.SetMotorDirection(elevatorMap[elevID].CurrentDir)
 				elevatorMap[elevID].CurrentFsmState = config.ACTIVE
 
@@ -50,19 +50,16 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			select{
 			case reachedFloor := <- ch.Drv_floors:
 				elevio.SetFloorIndicator(reachedFloor)
-				ch.Watchdog_updater <- true
-
 				elevatorMap[elevID].CurrentFloor = reachedFloor
 				elevatorMap[elevID].Stuck = false
+				ch.Watchdog_updater <- true
 
 				if elevcontroller.ShouldStopAtFloor(*elevatorMap[elevID]){
-					//Stopping at floor
 
 					elevio.SetDoorOpenLamp(true)
 					ch.Open_door <- true
 					elevio.SetMotorDirection(elevio.MD_Stop)
 					elevatorMap[elevID].CurrentFsmState = config.DOOR_OPEN
-
 
 					ch.Stopping_at_floor <- reachedFloor //sender til de andre heisene slik at de kan slette alt i den etasjen.
 				}
@@ -71,19 +68,18 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			default:
 
 				if elevatorMap[elevID].CurrentDir == elevio.MD_Stop{
-					ch.Watchdog_updater <- true
 					//Kommet ny ordre i etasje heis allerede er i
 
 					elevio.SetDoorOpenLamp(true)
-					ch.Open_door <- true
-					ch.Stopping_at_floor <- elevatorMap[elevID].CurrentFloor
-
 					elevio.SetMotorDirection(elevio.MD_Stop)
 					elevatorMap[elevID].CurrentFsmState = config.DOOR_OPEN
+
+					ch.Open_door <- true
+					ch.Stopping_at_floor <- elevatorMap[elevID].CurrentFloor
+					ch.Watchdog_updater <- true
 					
 					go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
 				}
-
 			}
 
 
@@ -98,17 +94,10 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 				if elevatorMap[elevID].CurrentOrder.Floor == elevatorMap[elevID].CurrentFloor{
 					elevatorMap[elevID].CurrentOrder.Floor = -1 //Fjerner currentOrder, siden den har utført den.
 				}
-
+				
 				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
 			}
 
-
-
-		case config.UNDEFINED: //??
-			//
-
-
-		default:
 
 		}
 	}

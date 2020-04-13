@@ -3,16 +3,15 @@ package timer
 import(
   "time"
   "fmt"
+
+
   "../config"
 )
 
-
-
-func DoorTimer(finished chan<- bool, start <-chan bool, doorOpenTime time.Duration) { //må kjøres som goroutine
+func DoorTimer(finished chan<- bool, start <-chan bool, doorOpenTime time.Duration) {
 
 	doorTimer := time.NewTimer(doorOpenTime)
 
-  //empty the channel -> not concurrent receivers
 	if !doorTimer.Stop() {
 		<-doorTimer.C
 	}
@@ -28,15 +27,14 @@ func DoorTimer(finished chan<- bool, start <-chan bool, doorOpenTime time.Durati
 	}
 }
 
-func WatchDogTimer(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, elevatorMap map[int]*config.Elevator, watchDogTime time.Duration) {
+func WatchDogTimer(fsmCh config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator, watchDogTime time.Duration) {
 	WatchDogTimer := time.NewTimer(watchDogTime)
 
-  //empty the channel -> not concurrent receivers
 	if !WatchDogTimer.Stop() && elevatorMap[elevID].CurrentOrder.Floor != -1 && elevatorMap[elevID].CurrentFsmState == config.ACTIVE {
 		<-WatchDogTimer.C
 	}
 
-	go func(){
+	go func(){ //oppdaterer WatchDog hvert minutt så lenge den er IDLE eller DOOR_OPEN
 		for{
 			if elevatorMap[elevID].CurrentFsmState != config.ACTIVE{
 				WatchDogTimer.Stop()
@@ -51,16 +49,12 @@ func WatchDogTimer(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevI
 		case <-fsmCh.Watchdog_updater:
 			WatchDogTimer.Stop()
 			WatchDogTimer.Reset(watchDogTime)
-			//fmt.Println("WatchDog Reset")
 
 		case <-WatchDogTimer.C:
 			fmt.Println("WatchDog Released")
 			elevatorMap[elevID].CurrentOrder.Floor = -1
 			elevatorMap[elevID].Stuck = true
-			go func(){fsmCh.New_state <- *elevatorMap[elevID]}()
-					
+			go func(){fsmCh.New_state <- *elevatorMap[elevID]}()			
 		}
 	}
-
-
 }

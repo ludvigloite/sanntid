@@ -1,12 +1,12 @@
 package elevcontroller
 
 import(
-	"../elevio"
-	//"../orderhandler"
-	"../config"
 	"fmt"
 	"time"
-	//"math/rand"
+
+
+	"../elevio"
+	"../config"
 )
 
 func Initialize(elevator *config.Elevator){
@@ -37,7 +37,6 @@ func ResetLights(){	//Slår av lyset på alle lys
 			elevio.SetButtonLamp(elevio.BT_HallUp,i,false)
 		}
 	}
-
 }
 
 func PrintElevators_withTime(elevatorMap map[int]*config.Elevator, openTime time.Duration){
@@ -81,11 +80,10 @@ func GetDirection(elevator config.Elevator) elevio.MotorDirection{
 func ShouldStopAtFloor(elevator config.Elevator) bool{
 	currentFloor := elevator.CurrentFloor
 	dir := elevator.CurrentDir
-	//destinationFloor := elevator.CurrentOrder.Floor
-	if currentFloor == 0 || currentFloor == 3{ //	if currentFloor == destinationFloor || currentFloor == 0 || currentFloor == 3{
+	if currentFloor == 0 || currentFloor == 3{
 		return true
 	}
-	if dir == elevio.MD_Stop{ //har ingen ordre eller er på etasjen currentOrder tilsier. KAN FØRE TIL ERROR!!
+	if dir == elevio.MD_Stop{ //har ingen ordre eller er på etasjen currentOrder tilsier.
 		return true
 	}
 	if elevator.CabOrders[currentFloor]{ //Det er en cab order i denne etasjen
@@ -100,37 +98,30 @@ func ShouldStopAtFloor(elevator config.Elevator) bool{
 	return false
 }
 
-func RankSolver(elevatorMap map[int]*config.Elevator,elevID int, fsmCh config.FSMChannels){
-	masterExist := false
+func LightUpdater(LightUpdateCh <-chan bool, elevatorMap map[int]*config.Elevator, elevID int){
+	empty_elevator := config.Elevator{}
 	for{
-		masterExist = false
-		myRank := elevatorMap[elevID].ElevRank
+		select{
+		case <- LightUpdateCh:
+			
+			elevator := elevatorMap[elevID]
 
-		for id,elev := range elevatorMap{
-			if elev.ElevRank == 1 && elev.Active{
-				masterExist = true
+			if !config.SHOW_ORDERS_WHEN_NETWORK_DOWN && elevator.NetworkDown{
+				elevator = &empty_elevator
 			}
-			if id != elevID && elev.Active && elev.ElevRank == myRank{				
-				if myRank != 1{
-					myRank--
-				}else if myRank != 3{
-					myRank++
+
+			for i := 0; i < config.NUM_FLOORS; i++{
+				elevio.SetButtonLamp(elevio.BT_Cab, i, elevator.CabOrders[i])
+
+				for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
+					if i != 0 && j == elevio.BT_HallDown{
+						elevio.SetButtonLamp(elevio.BT_HallDown, i, elevator.HallOrders[i][elevio.BT_HallDown])
+					}
+					if i != config.NUM_FLOORS && j == elevio.BT_HallUp{
+						elevio.SetButtonLamp(elevio.BT_HallUp, i, elevator.HallOrders[i][elevio.BT_HallUp])
+					}
 				}
-				if myRank==1{
-					masterExist = true
-				}
-				elevatorMap[elevID].ElevRank = myRank //trenger jeg denne?
-				//fmt.Println("Jeg har nå rank ",myRank)
-				go func(){fsmCh.New_state <- *elevatorMap[elevID]}() 
 			}
 		}
-		if !masterExist{
-			myRank = 1
-			elevatorMap[elevID].ElevRank = myRank //trenger jeg denne?
-			//fmt.Println("Jeg har nå rank ",myRank)
-			go func(){fsmCh.New_state <- *elevatorMap[elevID]}() 
-		}
-		time.Sleep(time.Second)
 	}
-
 }

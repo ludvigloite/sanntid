@@ -1,22 +1,20 @@
 package main
 
 import(
+	"strconv"
+    "fmt"
+    "flag"
+
+
     "./fsm"
     "./elevcontroller"
     "./config"
     "./elevio"
     "./timer"
-    "./orderhandler"
     "./network/peers"
     "./network/bcast"
     "./arbitrator"
     "./network"
-    //"./orderhandler"
-    "strconv"
-    "fmt"
-    "flag"
-    "math/rand"
-    "time"
 )
 
 
@@ -24,7 +22,6 @@ func main(){
 
 	fmt.Print("In Case of Network Shutdown: \nShow Orders: ",config.SHOW_ORDERS_WHEN_NETWORK_DOWN,"\tAdd HallOrders: ", config.ADD_HALL_ORDERS_WHEN_NETWORK_DOWN, "\n\n")
 	
-
     elevIDPtr := flag.Int("elevID",42,"elevator ID")
     portPtr := flag.String("port","","port to connect to Simulator")
 
@@ -33,24 +30,15 @@ func main(){
     elevID := *elevIDPtr
     port := *portPtr
 
-    rand.Seed(time.Now().UnixNano()) //genererer seed til randomizer.
-
     elevio.Init("localhost:"+port, config.NUM_FLOORS)
 
     elevatorMap := make(map[int]*config.Elevator)
 
     elevator := config.Elevator{
-        Active: false,
-        Stuck: false,
         NetworkDown: true, //dette for at det allerede er nettverkstrøbbel ved programstart.
         ElevID: elevID,
-        ElevRank: -1, //Dette fikses ved at man sjekker hvor mange heiser som er online.
-        CurrentOrder: config.Order{Floor:-1, ButtonType:-1},
-        CurrentFloor: -1,
-        CurrentDir: elevio.MD_Down,
+        CurrentOrder: config.Order{Floor:-1, ButtonType:-1}, //starter med å gi invalid currentOrder
         CurrentFsmState: config.IDLE,
-        CabOrders: [config.NUM_FLOORS]bool{},
-        HallOrders: [config.NUM_FLOORS][config.NUM_HALLBUTTONS]bool{},
     }
 
     firstElevator := elevator
@@ -64,7 +52,6 @@ func main(){
     elevatorMap[3] = &thirdElevator
 
     elevatorMap[elevID] = &elevator
-    
 
 
     fsmChannels := config.FSMChannels{
@@ -110,15 +97,16 @@ func main(){
 
     go elevio.PollButtons(fsmChannels.Drv_buttons)
     go elevio.PollFloorSensor(fsmChannels.Drv_floors)
-    go timer.DoorTimer(fsmChannels.Close_door,fsmChannels.Open_door,config.DOOR_OPEN_TIME) //Legg true på open_door når dør skal åpnes //skrives true til close_door når tiden er ute
-    go timer.WatchDogTimer(fsmChannels, networkChannels, elevID, elevatorMap, config.WATCHDOG_TIME)
-    go orderhandler.LightUpdater(fsmChannels.LightUpdateCh, elevatorMap, elevID)
 
-    go network.Sender(fsmChannels, networkChannels, elevID, elevatorMap)
-    go network.Receiver(networkChannels,fsmChannels, elevID, elevatorMap)
+    go timer.DoorTimer(fsmChannels.Close_door, fsmChannels.Open_door, config.DOOR_OPEN_TIME) //Legg true på open_door når dør skal åpnes //skrives true til close_door når tiden er ute
+    go timer.WatchDogTimer(fsmChannels, elevID, elevatorMap, config.WATCHDOG_TIME)
+
+	go network.Sender(fsmChannels, networkChannels, elevID, elevatorMap)
+    go network.Receiver(fsmChannels, networkChannels, elevID, elevatorMap)
+
+    go elevcontroller.LightUpdater(fsmChannels.LightUpdateCh, elevatorMap, elevID)
     go arbitrator.Arbitrator(fsmChannels, elevID, elevatorMap)
-
-    go elevcontroller.RankSolver(elevatorMap, elevID, fsmChannels)
+    go arbitrator.RankSolver(fsmChannels, elevID, elevatorMap)
 
     //go elevcontroller.PrintElevators_withTime(elevatorMap, config.SEND_ELEV_CYCLE)
 
