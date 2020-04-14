@@ -23,6 +23,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 	elevio.SetMotorDirection(elevio.MD_Stop)
 	elevio.SetFloorIndicator(floor)
 	elevator.CurrentFloor = floor //Siden det er snakk om pekere vil dette være det samme som elevatorMap[elevID].CurrentFloor = floor
+	elevator.Active = true
 
 	ch.New_state <- *elevator
 
@@ -54,11 +55,14 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 				elevatorMap[elevID].Stuck = false
 				ch.Watchdog_updater <- true
 
-				if elevcontroller.ShouldStopAtFloor(elevatorMap, elevID){
+				elevio.SetMotorDirection(elevio.MD_Stop)
+				elevatorMap[elevID].CurrentFsmState = config.IDLE
+
+
+				if elevcontroller.ShouldStopAtFloor(*elevatorMap[elevID]){
 
 					elevio.SetDoorOpenLamp(true)
 					ch.Open_door <- true
-					elevio.SetMotorDirection(elevio.MD_Stop)
 					elevatorMap[elevID].CurrentFsmState = config.DOOR_OPEN
 
 					ch.Stopping_at_floor <- reachedFloor //sender til de andre heisene slik at de kan slette alt i den etasjen.

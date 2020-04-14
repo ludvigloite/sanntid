@@ -105,6 +105,11 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
       if len(p.Peers) == 0{ //network failure!!
       	elevatorMap[elevID].NetworkDown = true
       	fsmCh.LightUpdateCh <- true
+      	for i := 1; i < config.NUM_ELEVATORS+1; i++{
+      		elevatorMap[i].CurrentOrder.Floor = -1
+      		elevatorMap[i].Active = false
+      	}
+      	elevatorMap[elevID].Active = true
       }else{
       	elevatorMap[elevID].NetworkDown = false
       }
@@ -144,12 +149,19 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
 
     case receivedOrder := <-netCh.ReceiveOrderCh:
       
-      if receivedOrder.ButtonType == elevio.BT_Cab{
-        elevatorMap[receivedOrder.Receiver_elev].CabOrders[receivedOrder.Floor] = receivedOrder.Should_add
-        if receivedOrder.Receiver_elev == elevID{
-           fsmCh.LightUpdateCh <- true
-        }
+      if receivedOrder.ButtonType == elevio.BT_Cab{ //Mottar cab orders fra andre heiser kun når du selv har vært nede..
+      	if receivedOrder.Receiver_elev == elevID{
+      		if elevatorMap[elevID].HasRecentlyBeenDown{
+      			elevatorMap[elevID].CabOrders[receivedOrder.Floor] = receivedOrder.Should_add
+      			fsmCh.LightUpdateCh <- true
+      		}
+        }else{
+        	elevatorMap[receivedOrder.Receiver_elev].CabOrders[receivedOrder.Floor] = receivedOrder.Should_add
+        }        
       }else{
+      	if !receivedOrder.Should_add && elevatorMap[elevID].CurrentOrder.Floor == receivedOrder.Floor && elevatorMap[elevID].CurrentOrder.ButtonType != elevio.BT_Cab{
+      		elevatorMap[elevID].CurrentOrder.Floor = -1
+      	}
         if elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] != receivedOrder.Should_add{
           elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] = receivedOrder.Should_add
           fsmCh.LightUpdateCh <- true

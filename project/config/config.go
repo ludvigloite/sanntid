@@ -10,18 +10,19 @@ import(
 )
 
 const(
-	SHOW_ORDERS_WHEN_NETWORK_DOWN = false
+	SHOW_ORDERS_WHEN_NETWORK_DOWN = true
 	ADD_HALL_ORDERS_WHEN_NETWORK_DOWN = true
 )
 
 const(
-	NUM_FLOORS 			= 4
-	NUM_HALLBUTTONS 	= 2
-	NUM_ELEVATORS		= 3
-	NUM_PACKETS_SENT	= 3
-	DOOR_OPEN_TIME 		= 3 * time.Second
-	SEND_ELEV_CYCLE		= 5 * time.Second
-	WATCHDOG_TIME		= 8 * time.Second
+	NUM_FLOORS 				= 4
+	NUM_HALLBUTTONS 		= 2
+	NUM_ELEVATORS			= 3
+	NUM_PACKETS_SENT		= 3
+	DOOR_OPEN_TIME 			= 3 * time.Second
+	SEND_ELEV_CYCLE			= 5 * time.Second
+	WATCHDOG_TIME			= 8 * time.Second
+	HAS_BEEN_DOWN_BUFFER	= 1 * time.Second
 )
 
 const(
@@ -52,6 +53,7 @@ type Elevator struct{
 	Active bool
 	Stuck bool
 	NetworkDown bool
+	HasRecentlyBeenDown bool
 	ElevID int
 	ElevRank int
 	CurrentOrder Order

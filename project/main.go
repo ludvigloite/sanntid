@@ -36,6 +36,7 @@ func main(){
 
     elevator := config.Elevator{
         NetworkDown: true, //dette for at det allerede er nettverkstrøbbel ved programstart.
+        HasRecentlyBeenDown: true,
         ElevID: elevID,
         CurrentOrder: config.Order{Floor:-1, ButtonType:-1}, //starter med å gi invalid currentOrder
         CurrentFsmState: config.IDLE,
@@ -100,6 +101,7 @@ func main(){
 
     go timer.DoorTimer(fsmChannels.Close_door, fsmChannels.Open_door, config.DOOR_OPEN_TIME) //Legg true på open_door når dør skal åpnes //skrives true til close_door når tiden er ute
     go timer.WatchDogTimer(fsmChannels, elevID, elevatorMap, config.WATCHDOG_TIME)
+    go timer.HasBeenDownTimer(elevID, elevatorMap, config.HAS_BEEN_DOWN_BUFFER)
 
 	go network.Sender(fsmChannels, networkChannels, elevID, elevatorMap)
     go network.Receiver(fsmChannels, networkChannels, elevID, elevatorMap)
@@ -108,7 +110,7 @@ func main(){
     go arbitrator.Arbitrator(fsmChannels, elevID, elevatorMap)
     go arbitrator.RankSolver(fsmChannels, elevID, elevatorMap)
 
-    //go elevcontroller.PrintElevators_withTime(elevatorMap, config.SEND_ELEV_CYCLE)
+    go elevcontroller.PrintElevators_withTime(elevatorMap, config.SEND_ELEV_CYCLE)
 
 
     fsm.RunElevator(fsmChannels, elevID, elevatorMap, &elevator)

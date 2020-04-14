@@ -27,6 +27,13 @@ func DoorTimer(finished chan<- bool, start <-chan bool, doorOpenTime time.Durati
 	}
 }
 
+func HasBeenDownTimer(elevID int, elevatorMap map[int]*config.Elevator, hasBeenDownBufferTime time.Duration) {
+
+	time.Sleep(hasBeenDownBufferTime)
+	elevatorMap[elevID].HasRecentlyBeenDown = false
+
+}
+
 func WatchDogTimer(fsmCh config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator, watchDogTime time.Duration) {
 	WatchDogTimer := time.NewTimer(watchDogTime)
 

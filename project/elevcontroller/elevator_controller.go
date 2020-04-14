@@ -77,22 +77,11 @@ func GetDirection(elevator config.Elevator) elevio.MotorDirection{
 	}
 }
 
-func ShouldStopAtFloor(elevatorMap map[int]*config.Elevator, elevID int) bool{
-	elevator := elevatorMap[elevID]
+func ShouldStopAtFloor(elevator config.Elevator) bool{
 
 	currentFloor := elevator.CurrentFloor
 	dir := elevator.CurrentDir
-	currentOrderFloor := elevator.CurrentOrder.Floor
-	
-	if currentFloor == currentOrderFloor{
-		elevatorMap[elevID].CurrentOrder.Floor = -1
-	}
-	if currentFloor == 0 || currentFloor == 3{
-		return true
-	}
-	if dir == elevio.MD_Stop{ //har ingen ordre eller er på etasjen currentOrder tilsier.
-		return true
-	}
+
 	if elevator.CabOrders[currentFloor]{ //Det er en cab order i denne etasjen
 		return true
 	}

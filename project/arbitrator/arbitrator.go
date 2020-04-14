@@ -43,6 +43,7 @@ func RankSolver(fsmCh config.FSMChannels, elevID int, elevatorMap map[int]*confi
 func Arbitrator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator){ //kjøres bare av Master. Master kan bytte underveis. Derfor må det sjekkes hver gang og den må være inni while-loopen // KJØRES SOM GOROUNTINE
 	order := config.Order{}
 	for{
+		//elevatorMap[elevID].Active = true
 		if elevatorMap[elevID].ElevRank == 1{
 			for i, elevator := range elevatorMap{ //går gjennom heisene.
 				if elevator.Active && !elevator.Stuck{
