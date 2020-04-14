@@ -54,7 +54,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 				elevatorMap[elevID].Stuck = false
 				ch.Watchdog_updater <- true
 
-				if elevcontroller.ShouldStopAtFloor(*elevatorMap[elevID]){
+				if elevcontroller.ShouldStopAtFloor(elevatorMap, elevID){
 
 					elevio.SetDoorOpenLamp(true)
 					ch.Open_door <- true
