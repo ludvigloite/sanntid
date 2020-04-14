@@ -91,6 +91,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 
 			select{
 			case <- ch.Close_door:	
+				fmt.Println("Close Door")
 				elevio.SetDoorOpenLamp(false) //slår av lys
 
 				elevatorMap[elevID].CurrentFsmState = config.IDLE
