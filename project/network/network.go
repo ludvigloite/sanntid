@@ -165,7 +165,7 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
           elevatorMap[elevID].HallOrders[receivedOrder.Floor][receivedOrder.ButtonType] = receivedOrder.Should_add
           fsmCh.LightUpdateCh <- true
         }
-        if !receivedOrder.Should_add && elevatorMap[elevID].CurrentOrder.Floor == receivedOrder.Floor && elevatorMap[elevID].CurrentOrder.ButtonType != elevio.BT_Cab{
+        if !receivedOrder.Should_add && elevatorMap[elevID].CurrentOrder.Floor == receivedOrder.Floor && elevatorMap[elevID].CurrentOrder.ButtonType != elevio.BT_Cab && receivedOrder.Sender_elev_ID != elevID{
       		elevatorMap[elevID].CurrentOrder.Floor = -1
       		//fmt.Println("Min CurrentOrder fjernes!!")
       	}

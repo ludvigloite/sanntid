@@ -126,3 +126,21 @@ func LightUpdater(LightUpdateCh <-chan bool, elevatorMap map[int]*config.Elevato
 		}
 	}
 }
+
+func OrderAtSameFloor(elevatorMap map[int]*config.Elevator, elevID int) bool{
+	floor := elevatorMap[elevID].CurrentFloor
+	if elevatorMap[elevID].CabOrders[floor]{
+		return true
+	}
+	for btn := elevio.BT_HallUp; btn != elevio.BT_Cab; btn++{
+		if elevatorMap[elevID].HallOrders[floor][btn]{
+			return true
+		}
+	}
+	return false
+}
+
+func CurrentOrderChecker(elevatorMap map[int]*config.Elevator, elevID int){
+
+
+}

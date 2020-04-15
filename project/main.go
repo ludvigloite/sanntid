@@ -110,7 +110,7 @@ func main(){
     go arbitrator.Arbitrator(fsmChannels, elevID, elevatorMap)
     go arbitrator.RankSolver(fsmChannels, elevID, elevatorMap)
 
-    //go elevcontroller.PrintElevators_withTime(elevatorMap, config.SEND_ELEV_CYCLE)
+    go elevcontroller.PrintElevators_withTime(elevatorMap, config.SEND_ELEV_CYCLE)
 
 
     fsm.RunElevator(fsmChannels, elevID, elevatorMap, &elevator)
