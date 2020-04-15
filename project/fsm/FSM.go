@@ -43,9 +43,19 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 				elevio.SetMotorDirection(elevatorMap[elevID].CurrentDir)
 				elevatorMap[elevID].CurrentFsmState = config.ACTIVE
 
-				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
+				if elevatorMap[elevID].CurrentDir == elevio.MD_Stop{ //kommet ny ordre der du allerede er
+					elevio.SetDoorOpenLamp(true)
+					elevio.SetMotorDirection(elevio.MD_Stop)
+					elevatorMap[elevID].CurrentFsmState = config.DOOR_OPEN
 
+					ch.Open_door <- true
+					ch.Stopping_at_floor <- elevatorMap[elevID].CurrentFloor
+					ch.Watchdog_updater <- true
+				}
+
+				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
 			}
+
 
 		case config.ACTIVE:
 			select{
@@ -58,8 +68,8 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 				elevio.SetMotorDirection(elevio.MD_Stop)
 				elevatorMap[elevID].CurrentFsmState = config.IDLE
 
-
 				if elevcontroller.ShouldStopAtFloor(*elevatorMap[elevID]){
+					//fmt.Println("Skal stoppe her.")
 
 					elevio.SetDoorOpenLamp(true)
 					ch.Open_door <- true
@@ -68,22 +78,6 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 					ch.Stopping_at_floor <- reachedFloor //sender til de andre heisene slik at de kan slette alt i den etasjen.
 				}
 				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
-
-			default:
-
-				if elevatorMap[elevID].CurrentDir == elevio.MD_Stop{
-					//Kommet ny ordre i etasje heis allerede er i
-
-					elevio.SetDoorOpenLamp(true)
-					elevio.SetMotorDirection(elevio.MD_Stop)
-					elevatorMap[elevID].CurrentFsmState = config.DOOR_OPEN
-
-					ch.Open_door <- true
-					ch.Stopping_at_floor <- elevatorMap[elevID].CurrentFloor
-					ch.Watchdog_updater <- true
-					
-					go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
-				}
 			}
 
 
@@ -91,7 +85,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 
 			select{
 			case <- ch.Close_door:	
-				fmt.Println("Close Door")
+				//fmt.Println("Close Door")
 				elevio.SetDoorOpenLamp(false) //slår av lys
 
 				elevatorMap[elevID].CurrentFsmState = config.IDLE

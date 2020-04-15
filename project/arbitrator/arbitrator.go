@@ -2,7 +2,7 @@ package arbitrator
 
 import(
 	"time"
-	"fmt"
+	//"fmt"
 
 
 	"../config"
@@ -51,14 +51,16 @@ func Arbitrator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.E
 					if elevator.CurrentOrder.Floor == -1{
 
 						//Heis har ingen current orders! Finnes det noen nye ordre?
+						time.Sleep(10 * time.Millisecond) //pass på at alle RemoveOrders har blitt synca
 						order = GetNewOrder(*elevator, elevatorMap, elevID, i)
 						
 						if order.Floor != -1{
-							fmt.Println()
-							fmt.Println("JEG HAR GITT NY CurrentOrder! elev: ",i, " floor: ", order.Floor)
-							fmt.Println()
+							//fmt.Println()
+							//fmt.Println("JEG HAR GITT NY CurrentOrder! elev: ",i, " floor: ", order.Floor)
+							//fmt.Println()
 							elevatorMap[i].CurrentOrder = order
 							ch.New_current_order <- order
+							//time.Sleep(10 * time.Millisecond)
 						}
 					}
 				}
@@ -164,6 +166,7 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 
 func AnotherGoingToFloor(floor int, elevatorMap map[int]*config.Elevator) bool{
 	for _, elevator := range elevatorMap{
+		//fmt.Println("ElevID: ",elevator.ElevID, " currentOrder: ", elevator.CurrentOrder.Floor)
 		if elevator.CurrentOrder.Floor == floor{
 			return true
 		}

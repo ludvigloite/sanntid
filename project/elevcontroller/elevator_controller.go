@@ -81,6 +81,11 @@ func ShouldStopAtFloor(elevator config.Elevator) bool{
 
 	currentFloor := elevator.CurrentFloor
 	dir := elevator.CurrentDir
+	//fmt.Println("DIR: ",dir)
+
+	if elevator.CurrentOrder.Floor == currentFloor{
+		return true
+	}
 
 	if elevator.CabOrders[currentFloor]{ //Det er en cab order i denne etasjen
 		return true

@@ -103,6 +103,7 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
       }
 
       if len(p.Peers) == 0{ //network failure!!
+      	fmt.Println("Network Lost!!")
       	elevatorMap[elevID].NetworkDown = true
       	fsmCh.LightUpdateCh <- true
       	for i := 1; i < config.NUM_ELEVATORS+1; i++{
@@ -148,7 +149,7 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
 
 
     case receivedOrder := <-netCh.ReceiveOrderCh:
-    	fmt.Println("Har fått inn en ordre. Should_add: ",receivedOrder.Should_add, " . Etasje: ",receivedOrder.Floor)
+    	//fmt.Println("Har fått inn en ordre. Should_add: ",receivedOrder.Should_add, " . Etasje: ",receivedOrder.Floor)
       
       if receivedOrder.ButtonType == elevio.BT_Cab{ //Mottar cab orders fra andre heiser kun når du selv har vært nede..
       	if receivedOrder.Receiver_elev == elevID{
@@ -166,7 +167,7 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
         }
         if !receivedOrder.Should_add && elevatorMap[elevID].CurrentOrder.Floor == receivedOrder.Floor && elevatorMap[elevID].CurrentOrder.ButtonType != elevio.BT_Cab{
       		elevatorMap[elevID].CurrentOrder.Floor = -1
-      		fmt.Println("Min CurrentOrder fjernes!!")
+      		//fmt.Println("Min CurrentOrder fjernes!!")
       	}
       }
 
@@ -176,11 +177,11 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
     case elevator := <-netCh.ReceiveElevStateCh:
       if elevator.ElevID != elevID{
         *elevatorMap[elevator.ElevID] = elevator
-        fmt.Println("Har fått en ny state fra NR ",elevator.ElevID," hvor CurrentOrderFloor: ", elevator.CurrentOrder.Floor)
+        //fmt.Println("Har fått en ny state fra NR ",elevator.ElevID," hvor CurrentOrderFloor: ", elevator.CurrentOrder.Floor)
       }
 
     case newCurrentOrder := <-netCh.ReceiveCurrentOrderCh:
-    	fmt.Println("Jeg har fått ny CurrentOrder")
+    	//fmt.Println("Jeg har fått ny CurrentOrder")
       elevatorMap[newCurrentOrder.Receiver_elev].CurrentOrder = newCurrentOrder
 
 
