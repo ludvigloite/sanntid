@@ -13,14 +13,15 @@ func Initialize(elevator *config.Elevator){
 	elevio.SetMotorDirection(elevio.MD_Down)
 	ResetLights()
 	InitQueues(elevator)
+	//PrintElevator(elevator)
 }
 
 func InitQueues(elevator *config.Elevator){
-	for i := 0;i < config.NUM_FLOORS; i++ {
-		elevator.CabOrders[i] = false //INIT CABORDERS
+	for flr := 0; flr < config.NUM_FLOORS; flr++ {
+		elevator.CabOrders[flr] = false //INIT CABORDERS
 
-		for j := elevio.BT_HallUp; j< config.NUM_HALLBUTTONS; j++{
-			elevator.HallOrders[i][j] = false //INIT HALLORDERS
+		for btn := elevio.BT_HallUp; btn != elevio.BT_Cab; btn++{
+			elevator.HallOrders[flr][btn] = false //INIT HALLORDERS
 		}
 	}
 }
@@ -37,6 +38,30 @@ func ResetLights(){	//Slår av lyset på alle lys
 			elevio.SetButtonLamp(elevio.BT_HallUp,i,false)
 		}
 	}
+}
+
+func PrintElevator(elevator *config.Elevator){
+	//elevator := elevatorMap[elevID]
+	
+	fmt.Println()
+	fmt.Println("elevID: ",elevator.ElevID,"\t Rank: ",elevator.ElevRank)
+	fmt.Println("Active? ",elevator.Active, "\t Stuck? ", elevator.Stuck)
+	fmt.Println("CurrentOrder = Floor: ",elevator.CurrentOrder.Floor, "\t ButtonType: ",elevator.CurrentOrder.ButtonType)
+	fmt.Println("CurrentFloor = ", elevator.CurrentFloor)
+	fmt.Println("CurrentFsmState = ", elevator.CurrentFsmState)
+	fmt.Println("Hallorders   = ")
+	for i := 0; i< config.NUM_FLOORS;i++{
+		for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
+			fmt.Print(elevator.HallOrders[i][j],"\t")
+		}
+		fmt.Println()
+	}
+	fmt.Println()
+	fmt.Println("CabOrders  = ")
+	for i := 0; i < config.NUM_FLOORS; i++{
+		fmt.Print(elevator.CabOrders[i], "\t")
+	}
+	fmt.Println()
 }
 
 func PrintElevators_withTime(elevatorMap map[int]*config.Elevator, openTime time.Duration){
@@ -81,7 +106,6 @@ func ShouldStopAtFloor(elevator config.Elevator) bool{
 
 	currentFloor := elevator.CurrentFloor
 	dir := elevator.CurrentDir
-	//fmt.Println("DIR: ",dir)
 
 	if elevator.CurrentOrder.Floor == currentFloor{
 		return true
@@ -110,7 +134,6 @@ func LightUpdater(LightUpdateCh <-chan bool, elevatorMap map[int]*config.Elevato
 			if !config.SHOW_ORDERS_WHEN_NETWORK_DOWN && elevator.NetworkDown{
 				elevator = &empty_elevator
 			}
-
 			for i := 0; i < config.NUM_FLOORS; i++{
 				elevio.SetButtonLamp(elevio.BT_Cab, i, elevator.CabOrders[i])
 
@@ -125,22 +148,4 @@ func LightUpdater(LightUpdateCh <-chan bool, elevatorMap map[int]*config.Elevato
 			}
 		}
 	}
-}
-
-func OrderAtSameFloor(elevatorMap map[int]*config.Elevator, elevID int) bool{
-	floor := elevatorMap[elevID].CurrentFloor
-	if elevatorMap[elevID].CabOrders[floor]{
-		return true
-	}
-	for btn := elevio.BT_HallUp; btn != elevio.BT_Cab; btn++{
-		if elevatorMap[elevID].HallOrders[floor][btn]{
-			return true
-		}
-	}
-	return false
-}
-
-func CurrentOrderChecker(elevatorMap map[int]*config.Elevator, elevID int){
-
-
 }

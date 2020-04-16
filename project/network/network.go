@@ -93,8 +93,9 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
     case p := <-netCh.PeerUpdateCh:
       fmt.Printf("Peer update:\n")
       fmt.Printf("  Peers:    %q\n", p.Peers)
-      fmt.Printf("  New:      %q\n", p.New)
-      fmt.Printf("  Lost:     %q\n", p.Lost)
+      //fmt.Printf("  New:      %q\n", p.New)
+      //fmt.Printf("  Lost:     %q\n", p.Lost)
+      fmt.Println()
 
       //GÅR GJENNOM ALLE SOM ER ACTIVE
       for _, peerStr := range p.Peers{
@@ -149,7 +150,6 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
 
 
     case receivedOrder := <-netCh.ReceiveOrderCh:
-    	//fmt.Println("Har fått inn en ordre. Should_add: ",receivedOrder.Should_add, " . Etasje: ",receivedOrder.Floor)
       
       if receivedOrder.ButtonType == elevio.BT_Cab{ //Mottar cab orders fra andre heiser kun når du selv har vært nede..
       	if receivedOrder.Receiver_elev == elevID{
@@ -167,7 +167,6 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
         }
         if !receivedOrder.Should_add && elevatorMap[elevID].CurrentOrder.Floor == receivedOrder.Floor && elevatorMap[elevID].CurrentOrder.ButtonType != elevio.BT_Cab && receivedOrder.Sender_elev_ID != elevID{
       		elevatorMap[elevID].CurrentOrder.Floor = -1
-      		//fmt.Println("Min CurrentOrder fjernes!!")
       	}
       }
 
@@ -177,11 +176,9 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
     case elevator := <-netCh.ReceiveElevStateCh:
       if elevator.ElevID != elevID{
         *elevatorMap[elevator.ElevID] = elevator
-        //fmt.Println("Har fått en ny state fra NR ",elevator.ElevID," hvor CurrentOrderFloor: ", elevator.CurrentOrder.Floor)
       }
 
     case newCurrentOrder := <-netCh.ReceiveCurrentOrderCh:
-    	//fmt.Println("Jeg har fått ny CurrentOrder")
       elevatorMap[newCurrentOrder.Receiver_elev].CurrentOrder = newCurrentOrder
 
 

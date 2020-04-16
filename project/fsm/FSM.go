@@ -15,6 +15,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 
 	elevcontroller.Initialize(elevator)
 
+
 	floor := <- ch.Drv_floors
 	for floor == -1{
 		floor = <- ch.Drv_floors
@@ -32,21 +33,12 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 
 	/*		INIT FERDIG		*/
 
+	//elevcontroller.PrintElevator(elevator)
+
 	for{
 
 		switch elevatorMap[elevID].CurrentFsmState{
 		case config.IDLE:
-
-			/*if elevcontroller.OrderAtSameFloor(elevatorMap,elevID){
-				ch.Stopping_at_floor <- elevatorMap[elevID].CurrentFloor
-
-				elevio.SetDoorOpenLamp(true)
-				elevio.SetMotorDirection(elevio.MD_Stop)
-				elevatorMap[elevID].CurrentFsmState = config.DOOR_OPEN
-
-				ch.Open_door <- true
-				ch.Watchdog_updater <- true
-			}*/
 			
 			destination := elevatorMap[elevID].CurrentOrder
 			if destination.Floor != -1{
@@ -69,6 +61,7 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 
 
 		case config.ACTIVE:
+
 			select{
 			case reachedFloor := <- ch.Drv_floors:
 				elevio.SetFloorIndicator(reachedFloor)
@@ -80,7 +73,6 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 				elevatorMap[elevID].CurrentFsmState = config.IDLE
 
 				if elevcontroller.ShouldStopAtFloor(*elevatorMap[elevID]){
-					//fmt.Println("Skal stoppe her.")
 
 					elevio.SetDoorOpenLamp(true)
 					ch.Open_door <- true
@@ -94,18 +86,14 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 
 		case config.DOOR_OPEN:
 
-			//if elevatorMap[elevID].HallOrders
-
 			select{
 			case <- ch.Close_door:	
-				//fmt.Println("Close Door")
-				elevio.SetDoorOpenLamp(false) //slår av lys
+				elevio.SetDoorOpenLamp(false)
 
 				elevatorMap[elevID].CurrentFsmState = config.IDLE
 
 				if elevatorMap[elevID].CurrentOrder.Floor == elevatorMap[elevID].CurrentFloor{
 					elevatorMap[elevID].CurrentOrder.Floor = -1 //Fjerner currentOrder, siden den har utført den.
-					//fmt.Println("Jeg fjerner min egen CurrentOrder!!!")
 				}
 				
 				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
