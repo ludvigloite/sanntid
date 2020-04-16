@@ -3,11 +3,13 @@
 package peers
 
 import (
-	"../conn"
 	"fmt"
 	"net"
 	"sort"
 	"time"
+
+	
+	"../conn"
 )
 
 type PeerUpdate struct {
@@ -17,11 +19,10 @@ type PeerUpdate struct {
 }
 
 const interval = 15 * time.Millisecond
-const timeout = 50 * time.Millisecond
+const timeout = 500 * time.Millisecond //Denne var opprinnelig 50 ms
 
 // Transmitter(.) writes to conn after time interval if transmitEnable is enabeled
 func Transmitter(port int, id string, transmitEnable <-chan bool) {
-	fmt.Println("Started transmitting peer at port ",port,". I have ID ",id)
 
 	conn := conn.DialBroadcastUDP(port)
 	addr, _ := net.ResolveUDPAddr("udp4", fmt.Sprintf("255.255.255.255:%d", port))
@@ -41,7 +42,6 @@ func Transmitter(port int, id string, transmitEnable <-chan bool) {
 //Reciever(.)
 
 func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
-	fmt.Println("Started receiving peer at port ",port)
 
 	var buf [1024]byte
 	var p PeerUpdate

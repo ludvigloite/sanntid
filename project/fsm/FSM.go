@@ -2,146 +2,101 @@ package fsm
 
 import(
 	"fmt"
-	"../orderhandler"
+	
+
 	"../elevio"
 	"../config"
+	"../elevcontroller"
 )
 
-const(
-	IDLE = "IDLE"
-	ACTIVE = "ACTIVE"
-	DOOR_OPEN = "DOOR_OPEN"
-	UNDEFINED = "UNDEFINED"
-)
+func RunElevator(ch config.FSMChannels, elevator *config.Elevator){
+	
+    /* 		INIT 			*/
+
+	elevcontroller.Initialize(elevator)
 
 
-func RunElevator(ch config.FSMChannels){
-	state := IDLE
-	orderhandler.SetCurrentState(0)
-
-
-	///////////////////////////////////
-	//	ch.Drv_buttons
-    //	ch.Drv_floors
-    //	ch.Open_door
-    //	ch.Close_door
-    //////////////////////////////////
-
-    /* 		INIT 	*/
-	elevio.SetMotorDirection(elevio.MD_Down)
-
-	a := <- ch.Drv_floors
-	for a == -1{
-		a = <- ch.Drv_floors
+	floor := <- ch.Drv_floors
+	for floor == -1{
+		floor = <- ch.Drv_floors
 	}
 
 	elevio.SetMotorDirection(elevio.MD_Stop)
-	orderhandler.SetCurrentFloor(a)
-	orderhandler.SetCurrentDir(0)
-	elevio.SetFloorIndicator(a)
-	fmt.Println("Heisen er intialisert og venter i etasje nr ", a)
-	/*		INIT FERDIG		*/
-	
+	elevio.SetFloorIndicator(floor)
+	elevator.CurrentFloor = floor
+	elevator.Active = true
 
+	ch.New_state <- *elevator
+
+	fmt.Println("The elevator is initialized and waiting on floor ", floor)
+	fmt.Println()
+
+	/*		INIT FINISHED		*/
 
 	for{
-		//orderhandler.UpdateLights()
 
-		switch state{
-		case IDLE: //heis er IDLE. Skal ikke gjøre noe med mindre den får knappetrykk eller får inn en ordre som skal utføres
-			newOrder := orderhandler.GetNewOrder()
-			if newOrder.Floor != -1{
-				fmt.Println("Det er funnet en ordre! Denne skal jeg utføre")
-				orderhandler.AddOrder(newOrder.Floor, newOrder.ButtonType, orderhandler.GetElevID())
-				orderhandler.SetCurrentOrder(newOrder.Floor)
-				orderhandler.SetCurrentDir(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()))
+		switch elevator.CurrentFsmState{
+		case config.IDLE:
+			
+			destination := elevator.CurrentOrder
+			if destination.Floor != -1{
+				elevator.CurrentDir = elevcontroller.GetDirection(*elevator) 
+				elevio.SetMotorDirection(elevator.CurrentDir)
+				elevator.CurrentFsmState = config.ACTIVE
 
-				elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))
-				state = ACTIVE
-				orderhandler.SetCurrentState(1)
+				if elevator.CurrentDir == elevio.MD_Stop{ //Received new order at my floor
+					elevio.SetDoorOpenLamp(true)
+					elevio.SetMotorDirection(elevio.MD_Stop)
+					elevator.CurrentFsmState = config.DOOR_OPEN
+
+					ch.Open_door <- true
+					ch.Stopping_at_floor <- elevator.CurrentFloor
+					ch.Watchdog_updater <- true
+				}
+
+				ch.New_state <- *elevator
 			}
 
-		case ACTIVE:
-			//orderhandler.UpdateLights()
+
+		case config.ACTIVE:
+
 			select{
 			case reachedFloor := <- ch.Drv_floors:
-				orderhandler.SetCurrentFloor(reachedFloor)
 				elevio.SetFloorIndicator(reachedFloor)
-				if orderhandler.ShouldStopAtFloor(reachedFloor, orderhandler.GetCurrentOrder(), orderhandler.GetElevID()){
-					fmt.Println("stopping at floor")
+				elevator.CurrentFloor = reachedFloor
+				elevator.Stuck = false
+				ch.Watchdog_updater <- true
+
+				elevio.SetMotorDirection(elevio.MD_Stop)
+				elevator.CurrentFsmState = config.IDLE
+
+				if elevcontroller.ShouldStopAtFloor(*elevator){
 
 					elevio.SetDoorOpenLamp(true)
-					//orderhandler.ClearFloor(reachedFloor)
-					//orderhandler.UpdateLights()
 					ch.Open_door <- true
+					elevator.CurrentFsmState = config.DOOR_OPEN
 
-					elevio.SetMotorDirection(elevio.MD_Stop)//
-					state = DOOR_OPEN
-					orderhandler.SetCurrentState(2)
-					//orderhandler.UpdateLights()
+					ch.Stopping_at_floor <- reachedFloor //Sending order to all the other elevators to delete HallOrders at this floor
 				}
-
-			default:
-				if orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()) == 0{
-					fmt.Println("stopping at floor in ACTIVE")
-
-					elevio.SetDoorOpenLamp(true)
-					//orderhandler.ClearFloor(orderhandler.GetCurrentFloor())
-					//orderhandler.UpdateLights()
-					ch.Open_door <- true
-
-					elevio.SetMotorDirection(elevio.MD_Stop)//
-					state = DOOR_OPEN
-					orderhandler.SetCurrentState(2)
-					//orderhandler.UpdateLights()
-				}
-
+				ch.New_state <- *elevator
 			}
 
 
-
-
-		case DOOR_OPEN:
-			//elevio.SetMotorDirection(elevio.MD_Stop)
+		case config.DOOR_OPEN:
 
 			select{
-			case <- ch.Close_door:
-	
-				fmt.Println("closing door__")
-				elevio.SetDoorOpenLamp(false) //slår av lys
-				
-				orderhandler.ClearFloor(orderhandler.GetCurrentFloor()) //
-				orderhandler.UpdateLights() //
+			case <- ch.Close_door:	
+				elevio.SetDoorOpenLamp(false)
 
-				//orderhandler.UpdateLights()
+				elevator.CurrentFsmState = config.IDLE
 
-				if orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder()) == 0 {
-					//kommet frem til enden.
-					orderhandler.SetCurrentOrder(-1)
-
-					state = IDLE
-					orderhandler.SetCurrentState(0)
-				}else{
-					elevio.SetMotorDirection(elevio.MotorDirection(orderhandler.GetDirection(orderhandler.GetCurrentFloor(), orderhandler.GetCurrentOrder())))
-
-					state = ACTIVE
-					orderhandler.SetCurrentState(1)
+				if elevator.CurrentOrder.Floor == elevator.CurrentFloor{
+					elevator.CurrentOrder.Floor = -1 //currentOrder has been taken
 				}
-			//orderhandler.UpdateLights()
-
-
-
-			default:
-
+				
+				ch.New_state <- *elevator
 			}
 
-
-
-		case UNDEFINED: //??
-			//
-
-
-		default:
 
 		}
 	}

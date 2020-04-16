@@ -1,125 +1,151 @@
 package elevcontroller
 
 import(
-	"../elevio"
-	"../orderhandler"
-	"../config"
 	"fmt"
 	"time"
+
+
+	"../elevio"
+	"../config"
 )
 
-
-func Initialize(elevID int, localhost string){
-    elevio.Init(localhost, config.NUM_FLOORS) //"localhost:15657"
-	InitializeLights(config.NUM_FLOORS)
-	orderhandler.SetElevatorID(elevID)
-	orderhandler.InitQueues()
-
-    //Wipe alle ordre til nå??
+func Initialize(elevator *config.Elevator){
+	elevio.SetMotorDirection(elevio.MD_Down)
+	resetLights()
+	initQueues(elevator)
 }
 
-func CheckAndAddOrder(ch config.FSMChannels){
-	for{
-		select{
-			case order := <- ch.Drv_buttons: //Fått inn knappetrykk
-				fmt.Println("Knapp er trykket ", int(order.Button), order.Floor)
-				orderhandler.AddOrder(order.Floor, int(order.Button),0) //0 fordi det bare skal legges til ordre. Ingen har tatt den enda.
-				//orderhandler.UpdateLights()
-				ch.LightUpdateCh <- true
+func initQueues(elevator *config.Elevator){
+	for flr := 0; flr < config.NUM_FLOORS; flr++ {
+		elevator.CabOrders[flr] = false
+
+		for btn := elevio.BT_HallUp; btn != elevio.BT_Cab; btn++{
+			elevator.HallOrders[flr][btn] = false
 		}
 	}
 }
 
-//Kan vel kanskje i stedet bare fjerne alle ordre og så kjøre update lights??
-func InitializeLights(numFloors int){ //NB: Endra her navn til numHallButtons
-	//Slår av lyset på alle lys
+func resetLights(){
+	numFloors := config.NUM_FLOORS
 	elevio.SetDoorOpenLamp(false)
 	for i := 0; i < numFloors; i++{
 		elevio.SetButtonLamp(elevio.BT_Cab, i, false)
-		if i != 0{ //er ikke i første etasje -> kan endre på alle ned_lys 
+		if i != 0{
 			elevio.SetButtonLamp(elevio.BT_HallDown,i,false)
 		}
-		if i != numFloors{ //er ikke i 4 etasje -> kan endre på alle opp_lys
+		if i != numFloors{
 			elevio.SetButtonLamp(elevio.BT_HallUp,i,false)
 		}
 	}
-
 }
 
-func TestReceiver(ch config.NetworkChannels){
-	fmt.Println("Har kommet inn i TestReceiver")
-	for {
-		select {
-		case p := <-ch.PeerUpdateCh:
-			fmt.Printf("Peer update:\n")
-			fmt.Printf("  Peers:    %q\n", p.Peers)
-			fmt.Printf("  New:      %q\n", p.New)
-			fmt.Printf("  Lost:     %q\n", p.Lost)
+//////////////
 
-		case packet := <-ch.ReceiverCh:
-			//fmt.Printf("Received: %#v\n", a.Order_list)
-			//fmt.Println("Mottar fra: ",a.ID," OPP \t NED") //opp ned er bare for at man skal forstå ordrekøen.
-			//orderhandler.PrintHallOrderQueue(a.Order_list)
-			if packet.ID == orderhandler.GetElevID(){
-				break //litt usikker på hvordan break funker
+func PrintElevator(elevator *config.Elevator){
+	
+	fmt.Println()
+	fmt.Println("elevID: ",elevator.ElevID,"\t Rank: ",elevator.ElevRank)
+	fmt.Println("Active? ",elevator.Active, "\t Stuck? ", elevator.Stuck)
+	fmt.Println("CurrentOrder = Floor: ",elevator.CurrentOrder.Floor, "\t ButtonType: ",elevator.CurrentOrder.ButtonType)
+	fmt.Println("CurrentFloor = ", elevator.CurrentFloor)
+	fmt.Println("CurrentFsmState = ", elevator.CurrentFsmState)
+	fmt.Println("Hallorders   = ")
+	for i := 0; i< config.NUM_FLOORS;i++{
+		for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
+			fmt.Print(elevator.HallOrders[i][j],"\t")
+		}
+		fmt.Println()
+	}
+	fmt.Println()
+	fmt.Println("CabOrders  = ")
+	for i := 0; i < config.NUM_FLOORS; i++{
+		fmt.Print(elevator.CabOrders[i], "\t")
+	}
+	fmt.Println()
+}
+
+func PrintElevators_withTime(elevatorMap map[int]*config.Elevator, openTime time.Duration){
+	for{
+		for _, elevator := range elevatorMap{
+			fmt.Println()
+			fmt.Println("elevID: ",elevator.ElevID,"\t Rank: ",elevator.ElevRank)
+			fmt.Println("Active? ",elevator.Active, "\t Stuck? ", elevator.Stuck)
+			fmt.Println("CurrentOrder = Floor: ",elevator.CurrentOrder.Floor, "\t ButtonType: ",elevator.CurrentOrder.ButtonType)
+			fmt.Println("CurrentFloor = ", elevator.CurrentFloor)
+			fmt.Println("CurrentFsmState = ", elevator.CurrentFsmState)
+			fmt.Println("Hallorders   = ")
+			for i := 0; i< config.NUM_FLOORS;i++{
+				for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
+					fmt.Print(elevator.HallOrders[i][j],"\t")
+				}
+				fmt.Println()
 			}
+			fmt.Println()
+			time.Sleep(300*time.Millisecond)
+		}
+		time.Sleep(openTime)
+	}
+}
 
-			if orderhandler.IsMaster(){ //Du selv er Master
-				orderhandler.MergeHallQueues(packet)
+func GetDirection(elevator config.Elevator) elevio.MotorDirection{
+	currentFloor := elevator.CurrentFloor
+	destinationFloor := elevator.CurrentOrder.Floor
 
-			} else if packet.ID ==1 { //du mottar fra Master
-				orderhandler.SetHallOrderQueue(packet.Order_list)
-			}
+	if destinationFloor == -1 || destinationFloor == currentFloor {
+		return elevio.MD_Stop
+
+	} else if currentFloor < destinationFloor {
+		return elevio.MD_Up
+
+	} else{
+		return elevio.MD_Down
+	}
+}
+
+func ShouldStopAtFloor(elevator config.Elevator) bool{
+
+	currentFloor := elevator.CurrentFloor
+	dir := elevator.CurrentDir
+
+	if elevator.CurrentOrder.Floor == currentFloor{
+		return true
+	}
+
+	if elevator.CabOrders[currentFloor]{
+		return true
+	}
+	if elevator.HallOrders[currentFloor][elevio.BT_HallUp] && dir == elevio.MD_Up{
+		return true
+	}
+	if elevator.HallOrders[currentFloor][elevio.BT_HallDown] && dir == elevio.MD_Down {
+		return true
+	}
+	return false
+}
+
+func LightUpdater(LightUpdateCh <-chan bool, elevatorMap map[int]*config.Elevator, elevID int){
+	empty_elevator := config.Elevator{}
+	for{
+		select{
+		case <- LightUpdateCh:
 			
-			orderhandler.UpdateLights()
+			elevator := elevatorMap[elevID]
 
-			//UPDATE BARE LIGHTS OM DET ER EN ENDRING. 
+			if !config.SHOW_ORDERS_WHEN_NETWORK_DOWN && elevator.NetworkDown{
+				elevator = &empty_elevator
+			}
+			for i := 0; i < config.NUM_FLOORS; i++{
+				elevio.SetButtonLamp(elevio.BT_Cab, i, elevator.CabOrders[i])
 
+				for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
+					if i != 0 && j == elevio.BT_HallDown{
+						elevio.SetButtonLamp(elevio.BT_HallDown, i, elevator.HallOrders[i][elevio.BT_HallDown])
+					}
+					if i != config.NUM_FLOORS && j == elevio.BT_HallUp{
+						elevio.SetButtonLamp(elevio.BT_HallUp, i, elevator.HallOrders[i][elevio.BT_HallUp])
+					}
+				}
+			}
 		}
 	}
 }
-
-
-func SendMsg(TransmitterCh chan <- config.Packet){
-	Msg := config.Packet{}
-	for{
-		Msg.Order_list = orderhandler.GetHallOrderQueue()
-		Msg.ID = orderhandler.GetElevID()
-		Msg.CurrentFloor = orderhandler.GetCurrentFloor()
-		Msg.State = orderhandler.GetCurrentState()
-		//fmt.Println("Sender kø:   ",orderhandler.GetHallOrderQueue())
-		TransmitterCh <- Msg
-		//fmt.Println(Msg)
-		time.Sleep(1*time.Second)
-	}
-}
-
-/*func SendMsg(TransmitterCh chan <- config.Packet, NewOrderCh ){ //send bare hvis du har fått inn en ny ordre. Ellers sender man hvert x sekund
-	Msg := config.Packet{}
-	for{
-
-		Msg.Order_list = orderhandler.GetHallOrderQueue()
-		Msg.ID = orderhandler.GetElevID()
-		Msg.CurrentFloor = orderhandler.GetCurrentFloor()
-		Msg.State = orderhandler.GetCurrentState()
-		//fmt.Println("Sender kø:   ",orderhandler.GetHallOrderQueue())
-		TransmitterCh <- Msg
-		//fmt.Println(Msg)
-		time.Sleep(1*time.Second)
-	}
-}*/
-
-
-/*	BRUKES IKKE, MEN KANSKJE TIL TESTING SENERE?
-
-func StopElevator(){
-	elevio.SetMotorDirection(elevio.MD_Stop)
-	OpenDoor(3)
-}
-
-func OpenDoor(seconds time.Duration) {
-	elevio.SetDoorOpenLamp(true)
-	time.Sleep(seconds * time.Second)
-	elevio.SetDoorOpenLamp(false)
-}
-*/

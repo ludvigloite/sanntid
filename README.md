@@ -1,8 +1,9 @@
-# TO DO
-1. Nye ordre kommer ikke inn når døra er åpen
-2. Bruke goroutines og channels istedet for basically C-kode
-3. Gjøre koden mye penere. Få all order_managment til å bare skje inne i order_managment modulen. Altså ikke bruk order.func(order.GetX(),order.GetY())
-4. Fikse nettverk
+# STATUS
+1. Nærmer oss veldig ferdig nå!!
+2. Ved "ethernet-utdragning" vil heisen fullføre de nåværende ordre, men vil ikke ta flere.
+3. Trenger å teste at alt fungerer som planlagt og etter oppgavespesifikasjonene.
+4. Må kjøre vår egen Final Acceptance Test (FAT)
+5. Koden må ryddes og kommenteres.
 
 ## NYTTIG
 1. Kill eldste prosess fra sanntids-PC
@@ -18,50 +19,57 @@ $ osascript sanntid_terminal_opener.scpt
 $ ./open_files.sh
 ```
 
+## NYTTIG
+1. Legg til scripts i PATH
+```bash
+$ cd
+$ vim .bashrc
+```
+Legg til følgende på bunn av fila:
+```bash
+$ export PATH=$PATH:path/to/file    for eksempel ~/sanntid/Simulator eller ~/sanntid/scripts
+```
+Du kan nå kjøre programmet/scriptet uansett hvor du er i filsystemet
 
-## For å kjøre ElevatorDriver
+2. Gjør scripts kjørbare:
+```bash
+$ chmod +x <filename>
+```
+3. Hvordan funker 'Heis.sh' ?
+For å kjøre en heis på port 14001, kjør følgende. Elev_ID vil automatisk bli det siste sifferet, i dette tilfellet 1.
+```bash
+$ Heis.sh 14001
+```
+4. FileOpener.sh funker ikke
+Du må oppdatere første linja med kode, som hos meg er
+```bash
+$ cd ~/sanntid/project/
+```
+Her kan du også velge hvilken rekkefølge filene åpnes i. Ikke alle filene i prosjektet blir åpnet.
+
+
+## FAULT HANDLING
+1. Motor Failure
+Trykk 8 for å stoppe motor. Trykk 7(ned) eller 9(opp) for å starte igjen
+2. Pakketap
+```bash
+$ PacketLoss.sh
+```
+For å flushe filter chain:
+```bash
+$ sudo iptables -F
+```
+3. Nettverkstrøbbel
+```bash
+$ NetworkLoss.sh
+```
+
+## For å kjøre ElevatorDriver(fysisk på sanntidssal)
 1. Gå i terminal
 2. skriv "pwd",  "/home/student/" bør da komme opp. Hvis ikke, skriv "cd".
 3. Skriv "cd .cargo/bin"
 4. Skriv "./ElevatorServer"
 5. Man kan nå kjøre main.go så vil heisen kjøre.
-
-
-## Kjør programmet med ELEV_ID
-1. Naviger til mappen
-2. NUMMER er enten 1, 2 eller 3 
-```bash
-$ go build main.go
-$ ./main -elevID='NUMMER'
-```
-
-## Linker for å kjøre Ludvigs mac
-
-1. KJØR Simulator
-```bash
-$ ./Desktop/Local\ Storage/heisSimulator/Simulator-v2/SimElevatorServer --port 10001
-```
-2. Åpne prosjektet
-```bash
-$ cd Desktop/Local\ Storage/Sanntid_prosjekt/sanntid
-
-Åpne filer:
-$ subl project 
-
-Build(inne i /project):
-$ go build main.go
-
-Kjør:
-$ ./main -elevID=1 -port=10001
-$ ./Desktop/Local\ Storage/Sanntid_prosjekt/sanntid/project/main -elevID=1 -port=10001
-```
-
-
-
-
-
-
-
 
 
 ## Hvordan update branch til Master
