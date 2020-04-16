@@ -20,7 +20,7 @@ const(
 	NUM_ELEVATORS			= 3
 	NUM_PACKETS_SENT		= 3
 	DOOR_OPEN_TIME 			= 3 * time.Second
-	SEND_ELEV_CYCLE			= 5 * time.Second
+	SEND_ELEV_CYCLE			= 5 * time.Second //
 	WATCHDOG_TIME			= 8 * time.Second
 	HAS_BEEN_DOWN_BUFFER	= 1 * time.Second
 )
@@ -50,18 +50,18 @@ type Order struct{
 }
 
 type Elevator struct{
-	Active bool
-	Stuck bool
-	NetworkDown bool
+	Active 				bool
+	Stuck 				bool
+	NetworkDown 		bool
 	HasRecentlyBeenDown bool
-	ElevID int
-	ElevRank int
-	CurrentOrder Order
-	CurrentFloor int
-	CurrentDir elevio.MotorDirection
-	CurrentFsmState FsmState
-	CabOrders [NUM_FLOORS]bool
-	HallOrders [NUM_FLOORS][NUM_HALLBUTTONS]bool
+	ElevID 				int
+	ElevRank 			int
+	CurrentOrder 		Order
+	CurrentFloor 		int
+	CurrentDir 			elevio.MotorDirection
+	CurrentFsmState 	FsmState
+	CabOrders [NUM_FLOORS]						bool
+	HallOrders [NUM_FLOORS][NUM_HALLBUTTONS]	bool
 }
 
 type FSMChannels struct {

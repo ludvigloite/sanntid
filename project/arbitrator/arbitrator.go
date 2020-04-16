@@ -9,7 +9,8 @@ import(
 	"../elevio"
 )
 
-func RankSolver(fsmCh config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator){
+//This function makes sure that there always is one and only one master.
+func RankSolver(New_state chan<- config.Elevator, elevatorMap map[int]*config.Elevator, elevID int){
 	masterExist := false
 	for{
 		masterExist = false
@@ -29,35 +30,33 @@ func RankSolver(fsmCh config.FSMChannels, elevID int, elevatorMap map[int]*confi
 					masterExist = true
 				}
 				elevatorMap[elevID].ElevRank = myRank
-				go func(){fsmCh.New_state <- *elevatorMap[elevID]}() 
+				New_state <- *elevatorMap[elevID]
 			}
 		}
 		if !masterExist{
 			myRank = 1
 			elevatorMap[elevID].ElevRank = myRank
-			go func(){fsmCh.New_state <- *elevatorMap[elevID]}() 
+			New_state <- *elevatorMap[elevID]
 		}
 		time.Sleep(time.Second)
 	}
 }
 
-func Arbitrator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator){ //kjøres bare av Master. Master kan bytte underveis. Derfor må det sjekkes hver gang og den må være inni while-loopen // KJØRES SOM GOROUNTINE
+//This function can only be ran by Master, and gives out orders to all the elevators.
+func Arbitrator(New_current_order chan<- config.Order, elevatorMap map[int]*config.Elevator, elevID int){
 	order := config.Order{}
 	for{
 		if elevatorMap[elevID].ElevRank == 1 && !elevatorMap[elevID].HasRecentlyBeenDown{
-			for i, elevator := range elevatorMap{ //går gjennom heisene.
+			for i, elevator := range elevatorMap{
 				if elevator.Active && !elevator.Stuck{
-					if elevator.CurrentOrder.Floor == -1{
+					if elevator.CurrentOrder.Floor == -1{ //Elevator has no currentOrder
 
-						//Heis har ingen current orders! Finnes det noen nye ordre?
-						time.Sleep(10 * time.Millisecond) //pass på at alle RemoveOrders har blitt synca
-						order = GetNewOrder(*elevator, elevatorMap, elevID, i)
+						time.Sleep(10 * time.Millisecond) //Make sure all RemoveOrders are synced.
+						order = getNewOrder(*elevator, elevatorMap, elevID, i)
 						
 						if order.Floor != -1{
-							//fmt.Println("Gitt ny CurrentOrder til ", i, " i etasje ", order.Floor)
-
 							elevatorMap[i].CurrentOrder = order
-							ch.New_current_order <- order
+							New_current_order <- order
 						}
 					}
 				}
@@ -67,7 +66,7 @@ func Arbitrator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.E
 }
 
 
-func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator, masterElevID int, currentElevID int) config.Order{
+func getNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator, masterElevID int, currentElevID int) config.Order{
 	newOrder := config.Order{
 		Sender_elev_ID: masterElevID,
 		Sender_elev_rank: 1,
@@ -75,6 +74,7 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 		Floor: -1,
 		ButtonType: elevio.BT_HallDown,
 	}
+
 	masterElev := elevatorMap[masterElevID]
 	currentFloor := elevator.CurrentFloor
 
@@ -82,6 +82,7 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 		return newOrder
 	}
 
+	//Is there any order at my CurrentFloor?
 	if elevator.CabOrders[currentFloor]{
 		newOrder.Floor = currentFloor
 		newOrder.ButtonType = elevio.BT_Cab
@@ -100,20 +101,20 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 
 	
 	if elevator.CurrentDir == elevio.MD_Up{
-		if elevator.CabOrders[3]{ //sjekker om det er en caborder i 3 etasje!
+		if elevator.CabOrders[3]{ //Is there any cab orders in 3rd floor?
 			newOrder.Floor = 3
 			newOrder.ButtonType = elevio.BT_Cab
 			return newOrder
 		}
 
-		for i := config.NUM_FLOORS-2; i > currentFloor; i--{ //Er det noen som går oppover over meg?
+		for i := config.NUM_FLOORS-2; i > currentFloor; i--{ //Is there any order going upwards over me?
 			if elevator.CabOrders[i]{
 				newOrder.Floor = i
 				newOrder.ButtonType = elevio.BT_Cab
 				return newOrder
 			}
 			if masterElev.HallOrders[i][elevio.BT_HallUp]{
-				if !AnotherGoingToFloor(i,elevatorMap,currentElevID){
+				if !anotherGoingToFloor(i,elevatorMap,currentElevID){
 					newOrder.Floor = i
 					newOrder.ButtonType = elevio.BT_HallUp
 					return newOrder
@@ -121,9 +122,9 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 			}
 		}
 
-		for i := config.NUM_FLOORS-1; i > currentFloor; i--{ //Er det noen som går nedover over meg?
+		for i := config.NUM_FLOORS-1; i > currentFloor; i--{ //Is there any order going downwards over me?
 			if masterElev.HallOrders[i][elevio.BT_HallDown]{
-				if !AnotherGoingToFloor(i, elevatorMap,currentElevID){
+				if !anotherGoingToFloor(i, elevatorMap,currentElevID){
 					newOrder.Floor = i
 					newOrder.ButtonType = elevio.BT_HallDown
 					return newOrder
@@ -131,20 +132,20 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 			}
 		}
 
-		if elevator.CabOrders[0]{ //sjekker om det er en caborder i 0 etasje!
+		if elevator.CabOrders[0]{ //Is there any cab order in 0 floor?
 			newOrder.Floor = 0
 			newOrder.ButtonType = elevio.BT_Cab
 			return newOrder
 		}
 
-		for i := 1; i < currentFloor; i++{ //er det noen som går nedover under meg?
+		for i := 1; i < currentFloor; i++{ //Is there any order going downwards under me?
 			if elevator.CabOrders[i]{
 				newOrder.Floor = i
 				newOrder.ButtonType = elevio.BT_Cab
 				return newOrder
 			}
 			if masterElev.HallOrders[i][elevio.BT_HallDown]{
-				if !AnotherGoingToFloor(i, elevatorMap,currentElevID){
+				if !anotherGoingToFloor(i, elevatorMap,currentElevID){
 					newOrder.Floor = i
 					newOrder.ButtonType = elevio.BT_HallDown
 					return newOrder
@@ -152,9 +153,9 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 			}
 		}
 
-		for i := 0; i < currentFloor; i++{ //Er det noen som går oppover under meg?
+		for i := 0; i < currentFloor; i++{ //Is there any order going upwards under me?
 			if masterElev.HallOrders[i][elevio.BT_HallUp]{
-				if !AnotherGoingToFloor(i, elevatorMap,currentElevID){
+				if !anotherGoingToFloor(i, elevatorMap,currentElevID){
 					newOrder.Floor = i
 					newOrder.ButtonType = elevio.BT_HallUp
 					return newOrder
@@ -162,20 +163,20 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 			}
 		}
 		
-	}else{ //DEN GÅR NEDOVER!
-		if elevator.CabOrders[0]{ //sjekker om det er en caborder i 0 etasje!
+	}else{ //Going downwards
+		if elevator.CabOrders[0]{ //Is there any cab order in 0 floor?
 			newOrder.Floor = 0
 			newOrder.ButtonType = elevio.BT_Cab
 			return newOrder
 		}
-		for i := 1; i < currentFloor; i++{ //Er det noen som går nedover under meg?
+		for i := 1; i < currentFloor; i++{ //Is there any order going downwards under me?
 			if elevator.CabOrders[i]{
 				newOrder.Floor = i
 				newOrder.ButtonType = elevio.BT_Cab
 				return newOrder
 			}
 			if masterElev.HallOrders[i][elevio.BT_HallDown]{
-				if !AnotherGoingToFloor(i, elevatorMap,currentElevID){
+				if !anotherGoingToFloor(i, elevatorMap,currentElevID){
 					newOrder.Floor = i
 					newOrder.ButtonType = elevio.BT_HallDown
 					return newOrder
@@ -183,9 +184,9 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 			}
 		}
 
-		for i := 0; i < currentFloor; i++{ //Er det noen som går oppover under meg?
+		for i := 0; i < currentFloor; i++{ //Is there any order going upwards under me?
 			if masterElev.HallOrders[i][elevio.BT_HallUp]{
-				if !AnotherGoingToFloor(i, elevatorMap,currentElevID){
+				if !anotherGoingToFloor(i, elevatorMap,currentElevID){
 					newOrder.Floor = i
 					newOrder.ButtonType = elevio.BT_HallUp
 					return newOrder
@@ -193,20 +194,20 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 			}
 		}
 
-		if elevator.CabOrders[3]{ //sjekker om det er en caborder i 3 etasje!
+		if elevator.CabOrders[3]{ //Is there any cab order in 3rd floor?
 			newOrder.Floor = 3
 			newOrder.ButtonType = elevio.BT_Cab
 			return newOrder
 		}
 
-		for i := config.NUM_FLOORS-2; i > currentFloor; i--{ //Er det noen som går oppover over meg?
+		for i := config.NUM_FLOORS-2; i > currentFloor; i--{ //Is there any order going upwards over me?
 			if elevator.CabOrders[i]{
 				newOrder.Floor = i
 				newOrder.ButtonType = elevio.BT_Cab
 				return newOrder
 			}
 			if masterElev.HallOrders[i][elevio.BT_HallUp]{
-				if !AnotherGoingToFloor(i, elevatorMap,currentElevID){
+				if !anotherGoingToFloor(i, elevatorMap,currentElevID){
 					newOrder.Floor = i
 					newOrder.ButtonType = elevio.BT_HallUp
 					return newOrder
@@ -214,9 +215,9 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 			}
 		}
 
-		for i := config.NUM_FLOORS-1; i > currentFloor; i--{ //Er det noen som går nedover over meg?
+		for i := config.NUM_FLOORS-1; i > currentFloor; i--{ //Is there any order going downwards over me?
 			if masterElev.HallOrders[i][elevio.BT_HallDown]{
-				if !AnotherGoingToFloor(i,elevatorMap,currentElevID){
+				if !anotherGoingToFloor(i,elevatorMap,currentElevID){
 					newOrder.Floor = i
 					newOrder.ButtonType = elevio.BT_HallDown
 					return newOrder
@@ -228,7 +229,7 @@ func GetNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 	return newOrder
 }
 
-func AnotherGoingToFloor(floor int, elevatorMap map[int]*config.Elevator, elevID int) bool{
+func anotherGoingToFloor(floor int, elevatorMap map[int]*config.Elevator, elevID int) bool{
 	for _, elevator := range elevatorMap{
 		if elevID != elevator.ElevID{
 			if elevator.CurrentOrder.Floor == floor || (elevator.CurrentFloor == floor && elevator.CurrentFsmState != config.ACTIVE && elevator.Active){

@@ -11,37 +11,37 @@ import(
 
 func Initialize(elevator *config.Elevator){
 	elevio.SetMotorDirection(elevio.MD_Down)
-	ResetLights()
-	InitQueues(elevator)
-	//PrintElevator(elevator)
+	resetLights()
+	initQueues(elevator)
 }
 
-func InitQueues(elevator *config.Elevator){
+func initQueues(elevator *config.Elevator){
 	for flr := 0; flr < config.NUM_FLOORS; flr++ {
-		elevator.CabOrders[flr] = false //INIT CABORDERS
+		elevator.CabOrders[flr] = false
 
 		for btn := elevio.BT_HallUp; btn != elevio.BT_Cab; btn++{
-			elevator.HallOrders[flr][btn] = false //INIT HALLORDERS
+			elevator.HallOrders[flr][btn] = false
 		}
 	}
 }
 
-func ResetLights(){	//Slår av lyset på alle lys
+func resetLights(){
 	numFloors := config.NUM_FLOORS
 	elevio.SetDoorOpenLamp(false)
 	for i := 0; i < numFloors; i++{
 		elevio.SetButtonLamp(elevio.BT_Cab, i, false)
-		if i != 0{ //er ikke i første etasje -> kan endre på alle ned_lys 
+		if i != 0{
 			elevio.SetButtonLamp(elevio.BT_HallDown,i,false)
 		}
-		if i != numFloors{ //er ikke i 4 etasje -> kan endre på alle opp_lys
+		if i != numFloors{
 			elevio.SetButtonLamp(elevio.BT_HallUp,i,false)
 		}
 	}
 }
 
+//////////////
+
 func PrintElevator(elevator *config.Elevator){
-	//elevator := elevatorMap[elevID]
 	
 	fmt.Println()
 	fmt.Println("elevID: ",elevator.ElevID,"\t Rank: ",elevator.ElevRank)
@@ -91,10 +91,10 @@ func GetDirection(elevator config.Elevator) elevio.MotorDirection{
 	currentFloor := elevator.CurrentFloor
 	destinationFloor := elevator.CurrentOrder.Floor
 
-	if destinationFloor == -1 || destinationFloor == currentFloor { //enten har den ikke noen retning, eller så er den på riktig floor
+	if destinationFloor == -1 || destinationFloor == currentFloor {
 		return elevio.MD_Stop
 
-	} else if currentFloor < destinationFloor { //heisen er lavere enn sin destinasjon -> kjører oppover
+	} else if currentFloor < destinationFloor {
 		return elevio.MD_Up
 
 	} else{
@@ -111,13 +111,13 @@ func ShouldStopAtFloor(elevator config.Elevator) bool{
 		return true
 	}
 
-	if elevator.CabOrders[currentFloor]{ //Det er en cab order i denne etasjen
+	if elevator.CabOrders[currentFloor]{
 		return true
 	}
-	if elevator.HallOrders[currentFloor][elevio.BT_HallUp] && dir == elevio.MD_Up{ //retning til heis er opp og det er en ordre opp
+	if elevator.HallOrders[currentFloor][elevio.BT_HallUp] && dir == elevio.MD_Up{
 		return true
 	}
-	if elevator.HallOrders[currentFloor][elevio.BT_HallDown] && dir == elevio.MD_Down { //retning til heis er ned og det er en ordre ned
+	if elevator.HallOrders[currentFloor][elevio.BT_HallDown] && dir == elevio.MD_Down {
 		return true
 	}
 	return false

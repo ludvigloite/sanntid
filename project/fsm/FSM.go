@@ -9,7 +9,7 @@ import(
 	"../elevcontroller"
 )
 
-func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator, elevator *config.Elevator){
+func RunElevator(ch config.FSMChannels, elevator *config.Elevator){
 	
     /* 		INIT 			*/
 
@@ -23,40 +23,38 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 
 	elevio.SetMotorDirection(elevio.MD_Stop)
 	elevio.SetFloorIndicator(floor)
-	elevator.CurrentFloor = floor //Siden det er snakk om pekere vil dette være det samme som elevatorMap[elevID].CurrentFloor = floor
+	elevator.CurrentFloor = floor
 	elevator.Active = true
 
 	ch.New_state <- *elevator
 
-	fmt.Println("Heisen er intialisert og venter i etasje nr ", floor)
+	fmt.Println("The elevator is initialized and waiting on floor ", floor)
 	fmt.Println()
 
-	/*		INIT FERDIG		*/
-
-	//elevcontroller.PrintElevator(elevator)
+	/*		INIT FINISHED		*/
 
 	for{
 
-		switch elevatorMap[elevID].CurrentFsmState{
+		switch elevator.CurrentFsmState{
 		case config.IDLE:
 			
-			destination := elevatorMap[elevID].CurrentOrder
+			destination := elevator.CurrentOrder
 			if destination.Floor != -1{
-				elevatorMap[elevID].CurrentDir = elevcontroller.GetDirection(*elevatorMap[elevID]) 
-				elevio.SetMotorDirection(elevatorMap[elevID].CurrentDir)
-				elevatorMap[elevID].CurrentFsmState = config.ACTIVE
+				elevator.CurrentDir = elevcontroller.GetDirection(*elevator) 
+				elevio.SetMotorDirection(elevator.CurrentDir)
+				elevator.CurrentFsmState = config.ACTIVE
 
-				if elevatorMap[elevID].CurrentDir == elevio.MD_Stop{ //kommet ny ordre der du allerede er
+				if elevator.CurrentDir == elevio.MD_Stop{ //Received new order at my floor
 					elevio.SetDoorOpenLamp(true)
 					elevio.SetMotorDirection(elevio.MD_Stop)
-					elevatorMap[elevID].CurrentFsmState = config.DOOR_OPEN
+					elevator.CurrentFsmState = config.DOOR_OPEN
 
 					ch.Open_door <- true
-					ch.Stopping_at_floor <- elevatorMap[elevID].CurrentFloor
+					ch.Stopping_at_floor <- elevator.CurrentFloor
 					ch.Watchdog_updater <- true
 				}
 
-				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
+				ch.New_state <- *elevator
 			}
 
 
@@ -65,22 +63,22 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			select{
 			case reachedFloor := <- ch.Drv_floors:
 				elevio.SetFloorIndicator(reachedFloor)
-				elevatorMap[elevID].CurrentFloor = reachedFloor
-				elevatorMap[elevID].Stuck = false
+				elevator.CurrentFloor = reachedFloor
+				elevator.Stuck = false
 				ch.Watchdog_updater <- true
 
 				elevio.SetMotorDirection(elevio.MD_Stop)
-				elevatorMap[elevID].CurrentFsmState = config.IDLE
+				elevator.CurrentFsmState = config.IDLE
 
-				if elevcontroller.ShouldStopAtFloor(*elevatorMap[elevID]){
+				if elevcontroller.ShouldStopAtFloor(*elevator){
 
 					elevio.SetDoorOpenLamp(true)
 					ch.Open_door <- true
-					elevatorMap[elevID].CurrentFsmState = config.DOOR_OPEN
+					elevator.CurrentFsmState = config.DOOR_OPEN
 
-					ch.Stopping_at_floor <- reachedFloor //sender til de andre heisene slik at de kan slette alt i den etasjen.
+					ch.Stopping_at_floor <- reachedFloor //Sending order to all the other elevators to delete HallOrders at this floor
 				}
-				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
+				ch.New_state <- *elevator
 			}
 
 
@@ -90,13 +88,13 @@ func RunElevator(ch config.FSMChannels, elevID int, elevatorMap map[int]*config.
 			case <- ch.Close_door:	
 				elevio.SetDoorOpenLamp(false)
 
-				elevatorMap[elevID].CurrentFsmState = config.IDLE
+				elevator.CurrentFsmState = config.IDLE
 
-				if elevatorMap[elevID].CurrentOrder.Floor == elevatorMap[elevID].CurrentFloor{
-					elevatorMap[elevID].CurrentOrder.Floor = -1 //Fjerner currentOrder, siden den har utført den.
+				if elevator.CurrentOrder.Floor == elevator.CurrentFloor{
+					elevator.CurrentOrder.Floor = -1 //currentOrder has been taken
 				}
 				
-				go func(){ch.New_state <- *elevatorMap[elevID]}() //sender kun sin egen Elevator!
+				ch.New_state <- *elevator
 			}
 
 

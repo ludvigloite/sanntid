@@ -8,6 +8,7 @@ import(
   "../config"
 )
 
+//Put true on open_door when door should be opened. It will be written true to close_door when time is up.
 func DoorTimer(finished chan<- bool, start <-chan bool, doorOpenTime time.Duration) {
 
 	doorTimer := time.NewTimer(doorOpenTime)
@@ -27,21 +28,20 @@ func DoorTimer(finished chan<- bool, start <-chan bool, doorOpenTime time.Durati
 	}
 }
 
-func HasBeenDownTimer(elevID int, elevatorMap map[int]*config.Elevator, hasBeenDownBufferTime time.Duration) {
+func HasBeenDownTimer(elevatorMap map[int]*config.Elevator, elevID int, hasBeenDownBufferTime time.Duration) {
 
 	time.Sleep(hasBeenDownBufferTime)
 	elevatorMap[elevID].HasRecentlyBeenDown = false
-
 }
 
-func WatchDogTimer(fsmCh config.FSMChannels, elevID int, elevatorMap map[int]*config.Elevator, watchDogTime time.Duration) {
+func WatchDogTimer(fsmCh config.FSMChannels, elevatorMap map[int]*config.Elevator, elevID int, watchDogTime time.Duration) {
 	WatchDogTimer := time.NewTimer(watchDogTime)
 
 	if !WatchDogTimer.Stop() && elevatorMap[elevID].CurrentOrder.Floor != -1 && elevatorMap[elevID].CurrentFsmState == config.ACTIVE {
 		<-WatchDogTimer.C
 	}
 
-	go func(){ //oppdaterer WatchDog hvert minutt så lenge den er IDLE eller DOOR_OPEN
+	go func(){ //update WatchDog every second as long as it is IDLE or DOOR_OPEN
 		for{
 			if elevatorMap[elevID].CurrentFsmState != config.ACTIVE{
 				WatchDogTimer.Stop()
@@ -61,7 +61,7 @@ func WatchDogTimer(fsmCh config.FSMChannels, elevID int, elevatorMap map[int]*co
 			fmt.Println("WatchDog Released")
 			elevatorMap[elevID].CurrentOrder.Floor = -1
 			elevatorMap[elevID].Stuck = true
-			go func(){fsmCh.New_state <- *elevatorMap[elevID]}()			
+			fsmCh.New_state <- *elevatorMap[elevID]			
 		}
 	}
 }
