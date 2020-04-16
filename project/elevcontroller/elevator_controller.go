@@ -39,54 +39,6 @@ func resetLights(){
 	}
 }
 
-//////////////
-
-func PrintElevator(elevator *config.Elevator){
-	
-	fmt.Println()
-	fmt.Println("elevID: ",elevator.ElevID,"\t Rank: ",elevator.ElevRank)
-	fmt.Println("Active? ",elevator.Active, "\t Stuck? ", elevator.Stuck)
-	fmt.Println("CurrentOrder = Floor: ",elevator.CurrentOrder.Floor, "\t ButtonType: ",elevator.CurrentOrder.ButtonType)
-	fmt.Println("CurrentFloor = ", elevator.CurrentFloor)
-	fmt.Println("CurrentFsmState = ", elevator.CurrentFsmState)
-	fmt.Println("Hallorders   = ")
-	for i := 0; i< config.NUM_FLOORS;i++{
-		for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
-			fmt.Print(elevator.HallOrders[i][j],"\t")
-		}
-		fmt.Println()
-	}
-	fmt.Println()
-	fmt.Println("CabOrders  = ")
-	for i := 0; i < config.NUM_FLOORS; i++{
-		fmt.Print(elevator.CabOrders[i], "\t")
-	}
-	fmt.Println()
-}
-
-func PrintElevators_withTime(elevatorMap map[int]*config.Elevator, openTime time.Duration){
-	for{
-		for _, elevator := range elevatorMap{
-			fmt.Println()
-			fmt.Println("elevID: ",elevator.ElevID,"\t Rank: ",elevator.ElevRank)
-			fmt.Println("Active? ",elevator.Active, "\t Stuck? ", elevator.Stuck)
-			fmt.Println("CurrentOrder = Floor: ",elevator.CurrentOrder.Floor, "\t ButtonType: ",elevator.CurrentOrder.ButtonType)
-			fmt.Println("CurrentFloor = ", elevator.CurrentFloor)
-			fmt.Println("CurrentFsmState = ", elevator.CurrentFsmState)
-			fmt.Println("Hallorders   = ")
-			for i := 0; i< config.NUM_FLOORS;i++{
-				for j := elevio.BT_HallUp; j != elevio.BT_Cab; j++{
-					fmt.Print(elevator.HallOrders[i][j],"\t")
-				}
-				fmt.Println()
-			}
-			fmt.Println()
-			time.Sleep(300*time.Millisecond)
-		}
-		time.Sleep(openTime)
-	}
-}
-
 func GetDirection(elevator config.Elevator) elevio.MotorDirection{
 	currentFloor := elevator.CurrentFloor
 	destinationFloor := elevator.CurrentOrder.Floor

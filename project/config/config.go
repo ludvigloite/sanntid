@@ -20,7 +20,6 @@ const(
 	NUM_ELEVATORS			= 3
 	NUM_PACKETS_SENT		= 3
 	DOOR_OPEN_TIME 			= 3 * time.Second
-	SEND_ELEV_CYCLE			= 5 * time.Second //
 	WATCHDOG_TIME			= 8 * time.Second
 	HAS_BEEN_DOWN_BUFFER	= 1 * time.Second
 )
