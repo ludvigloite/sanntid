@@ -1,10 +1,6 @@
 package elevcontroller
 
 import(
-	"fmt"
-	"time"
-
-
 	"../elevio"
 	"../config"
 )
