@@ -29,7 +29,7 @@ func DoorTimer(finished chan<- bool, start <-chan bool, doorOpenTime time.Durati
 		}
 	}
 }
-'
+
 //This function is ran only once. It exist so that an elevator that only had network trouble should not get cab orders from other elevators. 
 //Backed up cab orders are only given when the elevator must be restarted.
 func HasBeenDownTimer(elevatorMap map[int]*config.Elevator, elevID int, hasBeenDownBufferTime time.Duration) {
