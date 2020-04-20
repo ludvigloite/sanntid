@@ -1,5 +1,5 @@
 # STATUS
-1. Entirely finished!
+1. Finished!
 
 ## How to run
 1. run main.go with the flags elevID and port. Given the example that you would like to run an elevator with elevID=1 and port=14001:
