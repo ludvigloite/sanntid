@@ -21,6 +21,7 @@ $ ./Heis.sh 14001
 3. To keep track of current state of all elevators, all elevators has a local elevatorMap. This maps an elevID to a pointer to an elevator struct. This elevator struct has all necessary info about the spesific elevator. Each elevator also has a cabOrdersBackup that maps an elevator to a backup of that elevators Cab Orders.
 4. The elevator is initialized by going down until it hits a floor.
 5. All hardcoded values are in the config file. Here you can also change the behaviour for "plugged out network cable" scenario.
+6. Delivered code from these projects are *elevio.go* and all of the files in *network*-folder except *network.go*. We have used the libraries *strconv, fmt, flag* and *time*. All other code is written by us.
 
 ## Useful
 1. Add scripts to PATH
