@@ -1,4 +1,6 @@
-# STATUS
+# Sanntidsprosjekt Gruppe 14
+
+## STATUS
 1. Finished!
 
 ## How to run
