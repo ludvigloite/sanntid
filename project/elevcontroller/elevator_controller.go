@@ -1,3 +1,7 @@
+//This module contains all help-functions for the elevator.
+// - Initialize() initializes the elevator
+// - GetDirection() and ShouldStopAtFloor() are used by the FSM
+// - LightUpdater() updates all the lights.
 package elevcontroller
 
 import(

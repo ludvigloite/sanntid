@@ -1,3 +1,4 @@
+//This module contains the FSM for the individual elevators. It writes to FSM channels when it needs to communicate with other modules.
 package fsm
 
 import(
@@ -44,7 +45,7 @@ func RunElevator(ch config.FSMChannels, elevator *config.Elevator){
 				elevio.SetMotorDirection(elevator.CurrentDir)
 				elevator.CurrentFsmState = config.ACTIVE
 
-				if elevator.CurrentDir == elevio.MD_Stop{ //Received new order at my floor
+				if elevator.CurrentDir == elevio.MD_Stop{ //Received new order at currentFloor
 					elevio.SetDoorOpenLamp(true)
 					elevio.SetMotorDirection(elevio.MD_Stop)
 					elevator.CurrentFsmState = config.DOOR_OPEN
@@ -91,7 +92,7 @@ func RunElevator(ch config.FSMChannels, elevator *config.Elevator){
 				elevator.CurrentFsmState = config.IDLE
 
 				if elevator.CurrentOrder.Floor == elevator.CurrentFloor{
-					elevator.CurrentOrder.Floor = -1 //currentOrder has been taken
+					elevator.CurrentOrder.Floor = -1 //currentOrder is finished
 				}
 				
 				ch.New_state <- *elevator

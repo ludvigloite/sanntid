@@ -46,15 +46,17 @@ func main(){
     }
 
     //initializing all elevators in the local elevatorMap. These will be updated by peer updates once it is online.
-    firstElevator := elevator
-    firstElevator.ElevID = 1
-    elevatorMap[1] = &firstElevator
-    secondElevator := elevator
+    firstElevator := 		elevator
+    firstElevator.ElevID = 	1
+    elevatorMap[1] = 		&firstElevator
+
+    secondElevator := 		elevator
     secondElevator.ElevID = 2
-    elevatorMap[2] = &secondElevator
-    thirdElevator := elevator
-    thirdElevator.ElevID = 3
-    elevatorMap[3] = &thirdElevator
+    elevatorMap[2] = 		&secondElevator
+    
+    thirdElevator :=		elevator
+    thirdElevator.ElevID = 	3
+    elevatorMap[3] = 		&thirdElevator
 
     elevatorMap[elevID] = &elevator
 

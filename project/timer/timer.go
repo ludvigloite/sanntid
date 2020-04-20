@@ -1,3 +1,5 @@
+// This module handles all timer-related tasks.
+
 package timer
 
 import(
@@ -27,13 +29,16 @@ func DoorTimer(finished chan<- bool, start <-chan bool, doorOpenTime time.Durati
 		}
 	}
 }
-
+'
+//This function is ran only once. It exist so that an elevator that only had network trouble should not get cab orders from other elevators. 
+//Backed up cab orders are only given when the elevator must be restarted.
 func HasBeenDownTimer(elevatorMap map[int]*config.Elevator, elevID int, hasBeenDownBufferTime time.Duration) {
 
 	time.Sleep(hasBeenDownBufferTime)
 	elevatorMap[elevID].HasRecentlyBeenDown = false
 }
 
+//Handles motor failure error.
 func WatchDogTimer(fsmCh config.FSMChannels, elevatorMap map[int]*config.Elevator, elevID int, watchDogTime time.Duration) {
 	WatchDogTimer := time.NewTimer(watchDogTime)
 

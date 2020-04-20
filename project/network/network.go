@@ -1,3 +1,4 @@
+//This module contains the functions Sender() and Receiver() which are both ran as goroutines. It also has a couple of help-functions. 
 package network
 
 import (
@@ -8,6 +9,7 @@ import (
   	"../config"
   	"../elevio"
 )
+
 
 func Sender(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int, elevatorMap map[int]*config.Elevator){
   order := config.Order{}
@@ -118,7 +120,7 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
         for i:=0;i<config.NUM_PACKETS_SENT;i++{
         	netCh.TransmittCabOrderBackupCh <- cabOrdersBackup //Also send cabOrdersBackup so that everyone knows everyones cabOrders.
         } 
-        SendOrdersWhenComeback(netCh, elevatorMap, p.New, elevID, cabOrdersBackup)
+        sendOrdersWhenComeback(netCh, elevatorMap, p.New, elevID, cabOrdersBackup)
       }
    
       if len(p.Lost) > 0{
@@ -138,7 +140,7 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
 
 
     case newCabOrderBackup := <-netCh.ReceiveCabOrderBackupCh:
-      cabOrdersBackup = MergeCaborders(cabOrdersBackup, newCabOrderBackup)
+      cabOrdersBackup = mergeCaborders(cabOrdersBackup, newCabOrderBackup)
 
 
     case receivedOrder := <-netCh.ReceiveOrderCh:
@@ -179,7 +181,8 @@ func Receiver(fsmCh config.FSMChannels, netCh config.NetworkChannels, elevID int
   }
 }
 
-func SendOrdersWhenComeback(netCh config.NetworkChannels, elevatorMap map[int]*config.Elevator, comebackElev string, senderElev int, cabOrdersBackup map[string][config.NUM_FLOORS]bool){
+//Sends backup of caborders when elevator has been down
+func sendOrdersWhenComeback(netCh config.NetworkChannels, elevatorMap map[int]*config.Elevator, comebackElev string, senderElev int, cabOrdersBackup map[string][config.NUM_FLOORS]bool){
   comebackElevInt,_ := strconv.Atoi(comebackElev)
   order := config.Order{}
   order.Sender_elev_ID = senderElev
@@ -207,7 +210,7 @@ func SendOrdersWhenComeback(netCh config.NetworkChannels, elevatorMap map[int]*c
   }
 }
 
-func MergeCaborders(cabOrders1 map[string][config.NUM_FLOORS]bool, cabOrders2 map[string][config.NUM_FLOORS]bool) map[string][config.NUM_FLOORS]bool{
+func mergeCaborders(cabOrders1 map[string][config.NUM_FLOORS]bool, cabOrders2 map[string][config.NUM_FLOORS]bool) map[string][config.NUM_FLOORS]bool{
   cabOrders := make(map[string][config.NUM_FLOORS]bool)
   var list [config.NUM_FLOORS]bool
   i_str := ""

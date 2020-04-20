@@ -1,3 +1,4 @@
+//This module has all hardcoded values and channels.
 package config
 
 
@@ -9,6 +10,7 @@ import(
 	"../network/peers"
 )
 
+//These variables can be changed if you want different behaviour for "plugged out network cable" scenario.
 const(
 	SHOW_ORDERS_WHEN_NETWORK_DOWN = true
 	ADD_HALL_ORDERS_WHEN_NETWORK_DOWN = true
@@ -19,6 +21,9 @@ const(
 	NUM_HALLBUTTONS 		= 2
 	NUM_ELEVATORS			= 3
 	NUM_PACKETS_SENT		= 3
+)
+
+const(
 	DOOR_OPEN_TIME 			= 3 * time.Second
 	WATCHDOG_TIME			= 8 * time.Second
 	HAS_BEEN_DOWN_BUFFER	= 1 * time.Second

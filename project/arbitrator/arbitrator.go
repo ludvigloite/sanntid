@@ -1,8 +1,8 @@
+//This module handles new orders being given to the elevators by the Master-elevator. It also makes sure that there are always one and only one Master on the network.
 package arbitrator
 
 import(
 	"time"
-	//"fmt"
 
 
 	"../config"
@@ -65,7 +65,7 @@ func Arbitrator(New_current_order chan<- config.Order, elevatorMap map[int]*conf
 	}
 }
 
-
+//Finding new order for the spesific elevator
 func getNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator, masterElevID int, currentElevID int) config.Order{
 	newOrder := config.Order{
 		Sender_elev_ID: masterElevID,
@@ -229,6 +229,7 @@ func getNewOrder(elevator config.Elevator, elevatorMap map[int]*config.Elevator,
 	return newOrder
 }
 
+//checking if another elevator is going to the floor
 func anotherGoingToFloor(floor int, elevatorMap map[int]*config.Elevator, elevID int) bool{
 	for _, elevator := range elevatorMap{
 		if elevID != elevator.ElevID{
