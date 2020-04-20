@@ -14,7 +14,7 @@ $ ./Heis.sh 14001
 ```
 
 ## Information about the elevator
-1. We are using a master-slave system. At one point in time, there is always be one and only one Master. This Master is giving the other elevators on the network *currentOrders*. One elevator is always only executing one *currentOrder* at a time, but is checking for other relevant orders at every floor it passes.
+1. We are using a master-slave system. At one point in time, there will always be one and only one Master. This Master is giving the other elevators on the network *currentOrders*. One elevator is always only executing one *currentOrder* at a time, but is checking for other relevant orders at every floor it passes.
 2. Even though we use a master-slave system, the Master can change at any time. Therefore, all elevators are storing all information about all other elevators. Including Cab Orders. Cab Orders are only sent to its owner in case of elevator shutdown. 
 3. To keep track of current state of all elevators, all elevators has a local elevatorMap. This maps an elevID to a pointer to an elevator struct. This elevator struct has all necessary info about the spesific elevator. Each elevator also has a cabOrdersBackup that maps an elevator to a backup of that elevators Cab Orders.
 4. The elevator is initialized by going down until it hits a floor.
