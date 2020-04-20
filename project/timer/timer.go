@@ -38,7 +38,7 @@ func HasBeenDownTimer(elevatorMap map[int]*config.Elevator, elevID int, hasBeenD
 	elevatorMap[elevID].HasRecentlyBeenDown = false
 }
 
-//Handles motor failure error.
+//This function handles motor failure error.
 func WatchDogTimer(fsmCh config.FSMChannels, elevatorMap map[int]*config.Elevator, elevID int, watchDogTime time.Duration) {
 	WatchDogTimer := time.NewTimer(watchDogTime)
 
