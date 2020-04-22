@@ -1,7 +1,5 @@
 //This module contains all help-functions for the elevator.
-// - Initialize() initializes the elevator
-// - GetDirection() and ShouldStopAtFloor() are used by the FSM
-// - LightUpdater() updates all the lights.
+
 package elevcontroller
 
 import(
@@ -39,6 +37,7 @@ func resetLights(){
 	}
 }
 
+//Function used by FMS
 func GetDirection(elevator config.Elevator) elevio.MotorDirection{
 	currentFloor := elevator.CurrentFloor
 	destinationFloor := elevator.CurrentOrder.Floor
@@ -54,6 +53,7 @@ func GetDirection(elevator config.Elevator) elevio.MotorDirection{
 	}
 }
 
+//Function used by FMS
 func ShouldStopAtFloor(elevator config.Elevator) bool{
 
 	currentFloor := elevator.CurrentFloor
@@ -75,6 +75,7 @@ func ShouldStopAtFloor(elevator config.Elevator) bool{
 	return false
 }
 
+//Ran as goroutine. When there is put a value to LightUpdateCh, all the lights will be updated.
 func LightUpdater(LightUpdateCh <-chan bool, elevatorMap map[int]*config.Elevator, elevID int){
 	empty_elevator := config.Elevator{}
 	for{
