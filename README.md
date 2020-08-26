@@ -1,4 +1,11 @@
-# Sanntidsprosjekt Gruppe 14
+# Elevator project
+
+## TLDR
+- The task was to control 3 elevators.
+- They must be able to communicate, give each other orders, update each others lights etc.
+- The system must be able to handle most faults. This includes loss of network, loss of motor power, packet loss and more.
+- The program was made spring 2020 as a part of the NTNU course *TTK4145 - Real Time Programming*
+
 
 ## STATUS
 1. Finished!
